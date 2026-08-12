@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>event_camera_lab_bringup</name>
+  <version>0.1.0</version>
+  <description>Launch profiles for the event-camera-lab ROS workspace.</description>
+  <maintainer email="lixiang-moss@users.noreply.github.com">lixiang-moss</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>davis_ros_driver</exec_depend>
+  <exec_depend>dvs_renderer</exec_depend>
+</package>

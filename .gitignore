@@ -1,0 +1,33 @@
+# ROS build outputs
+ros_ws/build/
+ros_ws/devel/
+ros_ws/install/
+ros_ws/logs/
+.catkin_tools/
+
+# Local data and recordings
+data/*
+!data/.gitkeep
+*.bag
+*.db3
+*.mcap
+
+# Local environment
+.env
+*.local
+
+# Python/cache/temp
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.cache/
+tmp/
+temp/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
