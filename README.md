@@ -42,6 +42,17 @@ Start the two-camera profile when two compatible cameras are connected:
 CAMERA_PROFILE=current_davis_dual ./scripts/launch_live_stream.sh
 ```
 
+To open one live event-view window for each camera, allow Docker to use X11 and
+start the dual GUI profile:
+
+```bash
+xhost +local:docker
+CAMERA_PROFILE=current_davis_dual_with_renderer ./scripts/launch_live_stream.sh
+```
+
+The two rendered image topics are `/cam0/dvs_rendering` and
+`/cam1/dvs_rendering`.
+
 This uses `roslaunch`, so it starts a ROS master automatically when one is not already running.
 
 In another terminal, inspect topics:
@@ -50,7 +61,9 @@ In another terminal, inspect topics:
 ./scripts/check_topics.sh
 ```
 
-For the two-camera profile, check `/cam0/events` and `/cam1/events` separately.
+For either two-camera profile, check `/cam0/events` and `/cam1/events`
+separately. Camera-to-namespace assignment is not stable because these profiles
+intentionally do not bind devices by serial number.
 
 ## Documentation
 

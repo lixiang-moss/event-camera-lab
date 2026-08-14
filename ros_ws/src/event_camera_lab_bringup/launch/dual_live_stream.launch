@@ -2,10 +2,12 @@
   <arg name="cam0_namespace" default="cam0" />
   <arg name="cam1_namespace" default="cam1" />
   <arg name="cam1_start_delay" default="1.0" />
+  <arg name="aps_enabled" default="true" />
 
   <group ns="$(arg cam0_namespace)">
     <node name="event_camera_driver" pkg="davis_ros_driver" type="davis_ros_driver" output="screen">
       <param name="serial_number" value="" />
+      <param name="aps_enabled" value="$(arg aps_enabled)" />
       <param name="master" value="true" />
       <param name="reset_timestamps_delay" value="2.0" />
     </node>
@@ -15,6 +17,7 @@
     <node name="event_camera_driver" pkg="davis_ros_driver" type="davis_ros_driver" output="screen"
           launch-prefix="bash -lc 'sleep $(arg cam1_start_delay); exec &quot;$@&quot;' bash">
       <param name="serial_number" value="" />
+      <param name="aps_enabled" value="$(arg aps_enabled)" />
       <param name="master" value="false" />
       <remap from="reset_timestamps" to="/$(arg cam0_namespace)/reset_timestamps" />
     </node>

@@ -1,0 +1,44 @@
+<launch>
+  <arg name="cam0_namespace" default="cam0" />
+  <arg name="cam1_namespace" default="cam1" />
+  <arg name="cam1_start_delay" default="1.0" />
+  <arg name="aps_enabled" default="false" />
+  <arg name="display_method" default="red-blue" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/dual_live_stream.launch">
+    <arg name="cam0_namespace" value="$(arg cam0_namespace)" />
+    <arg name="cam1_namespace" value="$(arg cam1_namespace)" />
+    <arg name="cam1_start_delay" value="$(arg cam1_start_delay)" />
+    <arg name="aps_enabled" value="$(arg aps_enabled)" />
+  </include>
+
+  <group ns="$(arg cam0_namespace)">
+    <node name="dvs_renderer" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+      <param name="display_method" value="$(arg display_method)" />
+      <remap from="events" to="/$(arg cam0_namespace)/events" />
+      <remap from="image" to="/$(arg cam0_namespace)/image_raw" />
+      <remap from="camera_info" to="/$(arg cam0_namespace)/camera_info" />
+      <remap from="dvs_rendering" to="/$(arg cam0_namespace)/dvs_rendering" />
+    </node>
+
+    <node name="image_view" pkg="rqt_image_view" type="rqt_image_view"
+          args="/$(arg cam0_namespace)/dvs_rendering">
+      <remap from="image" to="/$(arg cam0_namespace)/dvs_rendering" />
+    </node>
+  </group>
+
+  <group ns="$(arg cam1_namespace)">
+    <node name="dvs_renderer" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+      <param name="display_method" value="$(arg display_method)" />
+      <remap from="events" to="/$(arg cam1_namespace)/events" />
+      <remap from="image" to="/$(arg cam1_namespace)/image_raw" />
+      <remap from="camera_info" to="/$(arg cam1_namespace)/camera_info" />
+      <remap from="dvs_rendering" to="/$(arg cam1_namespace)/dvs_rendering" />
+    </node>
+
+    <node name="image_view" pkg="rqt_image_view" type="rqt_image_view"
+          args="/$(arg cam1_namespace)/dvs_rendering">
+      <remap from="image" to="/$(arg cam1_namespace)/dvs_rendering" />
+    </node>
+  </group>
+</launch>

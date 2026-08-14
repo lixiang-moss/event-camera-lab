@@ -188,6 +188,8 @@ CAMERA_PROFILE=current_davis_dual ./scripts/launch_live_stream.sh
 
 当前双相机 profile 不指定 serial number，让 driver 自动连接可用设备。这样使用最简单，但要注意：`/cam0` 和 `/cam1` 对应哪一台物理相机不保证固定。重启、重新插拔 USB、启动顺序变化后，两台相机可能互换 namespace。如果后续实验需要严格区分左/右相机或固定标定关系，再改成 serial number 绑定。
 
+这里的 `current_davis_dual` 是纯驱动 profile，适合无界面采集、远程运行或只使用命令行检查 topic。需要同时观看两路实时事件画面时，使用第 5 节介绍的 `current_davis_dual_with_renderer`。
+
 ### 4.6 检查 ROS topics
 
 另开一个终端，在项目根目录运行：
@@ -272,6 +274,38 @@ GUI profile 默认设置 `aps_enabled=false`，让 `rqt_image_view` 自动订阅
 ```bash
 CAMERA_PROFILE=current_davis_with_renderer EXTRA_ARGS="aps_enabled:=true" ./scripts/launch_live_stream.sh
 ```
+
+### 5.1 双相机实时画面
+
+同时连接两台相机后，启动双目 GUI profile：
+
+```bash
+CAMERA_PROFILE=current_davis_dual_with_renderer ./scripts/launch_live_stream.sh
+```
+
+该 profile 复用双目基础 launch，并为每一路事件流分别启动 renderer 和图像窗口：
+
+```text
+/cam0/events -> /cam0/dvs_renderer -> /cam0/dvs_rendering -> rqt_image_view (cam0 window)
+/cam1/events -> /cam1/dvs_renderer -> /cam1/dvs_rendering -> rqt_image_view (cam1 window)
+```
+
+两个 `rqt_image_view` 窗口会分别显式选择 `/cam0/dvs_rendering` 和 `/cam1/dvs_rendering`。默认 `aps_enabled=false`、`display_method=red-blue`，用于清楚显示正负事件。如果需要改变渲染方式，可以覆盖 launch 参数：
+
+```bash
+CAMERA_PROFILE=current_davis_dual_with_renderer \
+  EXTRA_ARGS="display_method:=grayscale" \
+  ./scripts/launch_live_stream.sh
+```
+
+如果只出现一路画面，先确认两路事件 topic 都有数据：
+
+```bash
+EVENT_TOPIC=/cam0/events ./scripts/check_topics.sh
+EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
+```
+
+此 GUI profile 同样不指定 serial number，所以两个窗口对应的物理相机在重启或重新插拔后可能互换。它适合当前不要求固定左右相机身份的实验；涉及双目标定时需要重新确认物理对应关系。
 
 如果窗口已经打开但画面不明显，先在相机前挥手、移动相机，或改变光照。事件相机主要响应亮度变化，静止场景可能看起来接近黑屏。
 
