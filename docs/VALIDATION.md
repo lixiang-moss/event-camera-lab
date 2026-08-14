@@ -18,6 +18,8 @@ Validated items:
 - ROS workspace builds successfully with the default package set.
 - `rospack find davis_ros_driver`, `dvs_renderer`, and `event_camera_lab_bringup` all succeed.
 - `roslaunch event_camera_lab_bringup current_live_stream.launch --nodes` resolves `/dvs/event_camera_driver`.
+- `roslaunch event_camera_lab_bringup dual_live_stream.launch --nodes` resolves `/cam0/event_camera_driver` and `/cam1/event_camera_driver`.
+- `CAMERA_PROFILE=current_davis_dual EXTRA_ARGS='--nodes' ./scripts/launch_live_stream.sh` resolves the same two driver nodes.
 - Live driver starts when launched through `./scripts/launch_live_stream.sh`.
 - `/dvs/events` publishes at about 30 Hz during the short validation run.
 - `./scripts/record_events.sh` successfully records a short bag file to `data/`.
@@ -27,3 +29,4 @@ Notes:
 - The live driver must run as root inside the privileged container because the USB device node is owned by `root:root` and requires write access.
 - A missing camera calibration file warning appeared for `/root/.ros/camera_info/DAVIS-00000889.yaml`; this does not block event streaming.
 - Some imported upstream ROS packages emit CMake deprecation warnings because they declare old CMake compatibility. The packages still build successfully.
+- The dual-camera profile has been launch-parse validated, but not yet live-validated with two physical DAVIS346 devices connected at the same time.

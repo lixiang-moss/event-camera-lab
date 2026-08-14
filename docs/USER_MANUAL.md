@@ -143,7 +143,7 @@ rospack find dvs_renderer
 
 ### 4.5 启动当前 live stream profile
 
-默认 profile 用于当前第一台验证相机：
+默认 profile 用于一台事件相机：
 
 ```bash
 ./scripts/launch_live_stream.sh
@@ -166,6 +166,28 @@ roslaunch event_camera_lab_bringup current_live_stream.launch
 /dvs/imu
 ```
 
+如果同时连接两台 DAVIS346，可以启动双相机 profile：
+
+```bash
+CAMERA_PROFILE=current_davis_dual ./scripts/launch_live_stream.sh
+```
+
+双相机 profile 仍然使用同一个 `davis_ros_driver`，只是启动两个节点，并分别放到两个 namespace：
+
+```text
+/cam0/events
+/cam0/image_raw
+/cam0/camera_info
+/cam0/imu
+
+/cam1/events
+/cam1/image_raw
+/cam1/camera_info
+/cam1/imu
+```
+
+当前双相机 profile 不指定 serial number，让 driver 自动连接可用设备。这样使用最简单，但要注意：`/cam0` 和 `/cam1` 对应哪一台物理相机不保证固定。重启、重新插拔 USB、启动顺序变化后，两台相机可能互换 namespace。如果后续实验需要严格区分左/右相机或固定标定关系，再改成 serial number 绑定。
+
 ### 4.6 检查 ROS topics
 
 另开一个终端，在项目根目录运行：
@@ -186,6 +208,13 @@ roslaunch event_camera_lab_bringup current_live_stream.launch
 EVENT_TOPIC=/camera/events ./scripts/check_topics.sh
 ```
 
+双相机 profile 建议分别检查：
+
+```bash
+EVENT_TOPIC=/cam0/events ./scripts/check_topics.sh
+EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
+```
+
 ### 4.7 录制测试数据
 
 ```bash
@@ -198,6 +227,12 @@ EVENT_TOPIC=/camera/events ./scripts/check_topics.sh
 
 ```bash
 DURATION=60 EVENT_TOPIC=/dvs/events BAG_PREFIX=first_test ./scripts/record_events.sh
+```
+
+双相机 profile 可以同时录制两个 event topic：
+
+```bash
+EVENT_TOPICS="/cam0/events /cam1/events" BAG_PREFIX=dual_test ./scripts/record_events.sh
 ```
 
 生成的 bag 文件不会提交到 GitHub。
@@ -218,17 +253,27 @@ xhost +local:docker
 CAMERA_PROFILE=current_davis_with_renderer ./scripts/launch_live_stream.sh
 ```
 
-这个 profile 会调用上游 launch：
+这个 profile 会调用本项目的 GUI launch：
 
 ```bash
 roslaunch event_camera_lab_bringup current_live_stream_with_renderer.launch
 ```
 
-它通常会打开：
+它会打开：
 
 - `rqt_image_view`
 - `rqt_reconfigure`
 - event renderer
+
+GUI profile 默认设置 `aps_enabled=false`，让 `rqt_image_view` 自动订阅 `/dvs_rendering` 并优先显示红/蓝事件图。这样比显示 DAVIS 的 APS 灰度帧更适合确认事件流是否正常。
+
+如果以后想同时观察 APS 灰度帧，可以把 APS 打开：
+
+```bash
+CAMERA_PROFILE=current_davis_with_renderer EXTRA_ARGS="aps_enabled:=true" ./scripts/launch_live_stream.sh
+```
+
+如果窗口已经打开但画面不明显，先在相机前挥手、移动相机，或改变光照。事件相机主要响应亮度变化，静止场景可能看起来接近黑屏。
 
 只想手动打开动态参数调节：
 

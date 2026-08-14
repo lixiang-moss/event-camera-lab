@@ -1,10 +1,12 @@
 <launch>
   <arg name="namespace" default="dvs" />
   <arg name="serial_number" default="" />
+  <arg name="aps_enabled" default="true" />
 
   <group ns="$(arg namespace)">
     <node name="event_camera_driver" pkg="davis_ros_driver" type="davis_ros_driver" output="screen">
       <param name="serial_number" value="$(arg serial_number)" />
+      <param name="aps_enabled" value="$(arg aps_enabled)" />
     </node>
   </group>
 </launch>

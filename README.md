@@ -36,6 +36,12 @@ Start the current live stream profile:
 ./scripts/launch_live_stream.sh
 ```
 
+Start the two-camera profile when two compatible cameras are connected:
+
+```bash
+CAMERA_PROFILE=current_davis_dual ./scripts/launch_live_stream.sh
+```
+
 This uses `roslaunch`, so it starts a ROS master automatically when one is not already running.
 
 In another terminal, inspect topics:
@@ -43,6 +49,8 @@ In another terminal, inspect topics:
 ```bash
 ./scripts/check_topics.sh
 ```
+
+For the two-camera profile, check `/cam0/events` and `/cam1/events` separately.
 
 ## Documentation
 
