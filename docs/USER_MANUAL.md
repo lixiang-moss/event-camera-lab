@@ -190,7 +190,31 @@ CAMERA_PROFILE=current_davis_dual ./scripts/launch_live_stream.sh
 
 这里的 `current_davis_dual` 是纯驱动 profile，适合无界面采集、远程运行或只使用命令行检查 topic。需要同时观看两路实时事件画面时，使用第 5 节介绍的 `current_davis_dual_with_renderer`。
 
-### 4.6 检查 ROS topics
+### 4.6 启动 DVXplorer
+
+单台 DVXplorer 使用项目自己的纯驱动 profile：
+
+```bash
+CAMERA_PROFILE=dvxplorer ./scripts/launch_live_stream.sh
+```
+
+该入口调用：
+
+```bash
+roslaunch event_camera_lab_bringup dvxplorer_live_stream.launch
+```
+
+默认不指定 serial number，由 `dvxplorer_ros_driver` 自动连接可用设备。主要 topics 为：
+
+```text
+/dvs/events
+/dvs/imu
+/dvs/camera_info
+```
+
+DVXplorer 没有 DAVIS 的 APS 灰度图像流，因此不会发布 `/dvs/image_raw`。需要实时画面时，使用第 5.2 节的 event renderer GUI profile。
+
+### 4.7 检查 ROS topics
 
 另开一个终端，在项目根目录运行：
 
@@ -217,7 +241,7 @@ EVENT_TOPIC=/cam0/events ./scripts/check_topics.sh
 EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
 ```
 
-### 4.7 录制测试数据
+### 4.8 录制测试数据
 
 ```bash
 ./scripts/record_events.sh
@@ -306,6 +330,30 @@ EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
 ```
 
 此 GUI profile 同样不指定 serial number，所以两个窗口对应的物理相机在重启或重新插拔后可能互换。它适合当前不要求固定左右相机身份的实验；涉及双目标定时需要重新确认物理对应关系。
+
+### 5.2 DVXplorer 实时画面
+
+确认 Host 已允许 Docker 使用 X11 后运行：
+
+```bash
+CAMERA_PROFILE=dvxplorer_with_renderer ./scripts/launch_live_stream.sh
+```
+
+该 profile 调用项目自己的 `dvxplorer_live_stream_with_renderer.launch`，运行流程是：
+
+```text
+/dvs/events -> dvs_renderer -> /dvs_rendering -> rqt_image_view
+```
+
+GUI 会显式选择 `/dvs_rendering`，并同时启动 `rqt_reconfigure`。默认采用红蓝事件显示；可以覆盖渲染方式：
+
+```bash
+CAMERA_PROFILE=dvxplorer_with_renderer \
+  EXTRA_ARGS="display_method:=grayscale" \
+  ./scripts/launch_live_stream.sh
+```
+
+DVXplorer 的实时窗口显示事件累积图，不是传统相机帧。静止场景可能接近黑屏，移动相机、在镜头前移动物体或改变光照后应看到事件。
 
 如果窗口已经打开但画面不明显，先在相机前挥手、移动相机，或改变光照。事件相机主要响应亮度变化，静止场景可能看起来接近黑屏。
 

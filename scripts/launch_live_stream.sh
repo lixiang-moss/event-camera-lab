@@ -34,9 +34,14 @@ case "${CAMERA_PROFILE}" in
     LAUNCH_FILE="${LAUNCH_FILE:-dvs_mono.launch}"
     COMMAND="roslaunch ${LAUNCH_PACKAGE} ${LAUNCH_FILE} ${EXTRA_ARGS}"
     ;;
+  dvxplorer)
+    LAUNCH_PACKAGE="${LAUNCH_PACKAGE:-event_camera_lab_bringup}"
+    LAUNCH_FILE="${LAUNCH_FILE:-dvxplorer_live_stream.launch}"
+    COMMAND="roslaunch ${LAUNCH_PACKAGE} ${LAUNCH_FILE} ${EXTRA_ARGS}"
+    ;;
   dvxplorer_with_renderer)
-    LAUNCH_PACKAGE="${LAUNCH_PACKAGE:-dvs_renderer}"
-    LAUNCH_FILE="${LAUNCH_FILE:-dvxplorer_mono.launch}"
+    LAUNCH_PACKAGE="${LAUNCH_PACKAGE:-event_camera_lab_bringup}"
+    LAUNCH_FILE="${LAUNCH_FILE:-dvxplorer_live_stream_with_renderer.launch}"
     COMMAND="roslaunch ${LAUNCH_PACKAGE} ${LAUNCH_FILE} ${EXTRA_ARGS}"
     ;;
   custom)
@@ -48,7 +53,7 @@ case "${CAMERA_PROFILE}" in
     ;;
   *)
     echo "Unknown CAMERA_PROFILE: ${CAMERA_PROFILE}" >&2
-    echo "Supported: current_davis, current_davis_with_renderer, current_davis_dual, current_davis_dual_with_renderer, dvs128_with_renderer, dvxplorer_with_renderer, custom" >&2
+    echo "Supported: current_davis, current_davis_with_renderer, current_davis_dual, current_davis_dual_with_renderer, dvs128_with_renderer, dvxplorer, dvxplorer_with_renderer, custom" >&2
     exit 1
     ;;
 esac

@@ -53,6 +53,16 @@ CAMERA_PROFILE=current_davis_dual_with_renderer ./scripts/launch_live_stream.sh
 The two rendered image topics are `/cam0/dvs_rendering` and
 `/cam1/dvs_rendering`.
 
+Start a DVXplorer without or with the event-view GUI:
+
+```bash
+CAMERA_PROFILE=dvxplorer ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=dvxplorer_with_renderer ./scripts/launch_live_stream.sh
+```
+
+Both DVXplorer profiles use project-owned launch files and publish events on
+`/dvs/events`. The GUI profile renders them on `/dvs_rendering`.
+
 This uses `roslaunch`, so it starts a ROS master automatically when one is not already running.
 
 In another terminal, inspect topics:
