@@ -1,6 +1,6 @@
 # Validation Notes
 
-Date: 2026-08-12; dual-GUI validation updated 2026-08-14; DVXplorer profile validation updated 2026-08-16
+Date: 2026-08-12; dual-GUI validation updated 2026-08-14; DVXplorer and calibration/rosbag validation updated 2026-08-16
 
 Host:
 
@@ -32,6 +32,15 @@ Validated items:
 - `dvxplorer_live_stream_with_renderer.launch` additionally resolves `/dvs_renderer`, `/image_view`, and `/rqt_reconfigure`.
 - `CAMERA_PROFILE=dvxplorer` and `CAMERA_PROFILE=dvxplorer_with_renderer` resolve the project-owned bring-up launch files.
 - `./scripts/record_events.sh` successfully records a short bag file to `data/`.
+- The image includes `camera_calibration`; `rospack find camera_calibration` and `cameracalibrator.py --help` succeed. The package also installs its `image_geometry` dependency.
+- The Docker entrypoint preserves command arguments until after ROS setup, so direct container commands ending in `--help` no longer leak those arguments into catkin's setup utility.
+- With one DAVIS346 connected and APS enabled, `/dvs/image_raw` published `346x260` `mono8` images at about 40 Hz, and `/dvs/set_camera_info` was available.
+- `cameracalibrator.py` started its GUI and subscribed to `/dvs/image_raw`. No samples were collected and `CALIBRATE`, `SAVE`, and `COMMIT` were not used.
+- A 4-second single-camera validation bag contained 112 `/dvs/events` messages, 150 `/dvs/image_raw` messages, and 3740 `/dvs/imu` messages over 3.7 seconds. `rosbag info` and `rosbag check` both succeeded.
+- `rosbag play --clock --pause` started in the expected paused state. During looped playback, events published at about 30 Hz and `/dvs_rendering` at about 39-41 Hz.
+- An explicit `rqt_image_view /dvs_rendering` command subscribed successfully during playback. The upstream `renderer_mono.launch` rqt node opened without reliably selecting the rendering topic, so the guide now starts renderer and image view separately.
+- With no calibration YAML loaded, `/dvs/camera_info` did not publish messages and therefore was absent from the validation bag.
+- The dual-bag renderer commands received a namespace-only static check: `/cam0` and `/cam1` inputs, outputs, and auxiliary topics resolved separately. No two-camera hardware run was performed for this calibration/rosbag update.
 
 Notes:
 
@@ -40,3 +49,5 @@ Notes:
 - Some imported upstream ROS packages emit CMake deprecation warnings because they declare old CMake compatibility. The packages still build successfully.
 - The dual profiles intentionally leave `serial_number` empty, so physical camera assignment to `/cam0` and `/cam1` is not stable across reconnects or restarts.
 - No DVXplorer hardware was connected during the 2026-08-16 validation, so its profiles were build- and launch-validated but not live-stream validated.
+- The calibration validation only confirmed dependencies, topics, services, image input, and GUI startup. It did not create or write camera intrinsics.
+- Only one DAVIS346 was connected for the calibration and rosbag validation in this update.

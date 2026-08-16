@@ -78,6 +78,7 @@ intentionally do not bind devices by serial number.
 ## Documentation
 
 - Full Chinese user manual: [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
+- DAVIS calibration and rosbag guide: [docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md](docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md)
 - Upstream source record: [docs/SOURCES.md](docs/SOURCES.md)
 - Current validation notes: [docs/VALIDATION.md](docs/VALIDATION.md)
 - Thesis project plan: [event_camera_thesis_project_plan.md](event_camera_thesis_project_plan.md)

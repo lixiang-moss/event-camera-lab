@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-rosdep \
     python3-vcstool \
+    ros-${ROS_DISTRO}-camera-calibration \
     ros-${ROS_DISTRO}-camera-info-manager \
     ros-${ROS_DISTRO}-cv-bridge \
     ros-${ROS_DISTRO}-dynamic-reconfigure \

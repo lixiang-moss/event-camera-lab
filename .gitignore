@@ -12,6 +12,10 @@ data/*
 *.db3
 *.mcap
 
+# Device-specific camera calibration
+config/camera_info/*.yaml
+!config/camera_info/.gitkeep
+
 # Local environment
 .env
 *.local

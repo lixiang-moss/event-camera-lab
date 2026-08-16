@@ -19,4 +19,5 @@ services:
       - .:/workspace
       - /dev/bus/usb:/dev/bus/usb
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./config/camera_info:/root/.ros/camera_info
     working_dir: /workspace
