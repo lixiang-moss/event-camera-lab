@@ -1,6 +1,6 @@
 # Validation Notes
 
-Date: 2026-08-12; dual-GUI validation updated 2026-08-14; DVXplorer and calibration/rosbag validation updated 2026-08-16
+Date: 2026-08-12; dual-GUI validation updated 2026-08-14; DVXplorer and calibration/rosbag validation updated 2026-08-16; EVK4-HD validation updated 2026-08-19
 
 Host:
 
@@ -42,6 +42,25 @@ Validated items:
 - With no calibration YAML loaded, `/dvs/camera_info` did not publish messages and therefore was absent from the validation bag.
 - The dual-bag renderer commands received a namespace-only static check: `/cam0` and `/cam1` inputs, outputs, and auxiliary topics resolved separately. No two-camera hardware run was performed for this calibration/rosbag update.
 
+EVK4-HD validated items:
+
+- The Docker image builds OpenEB `4.6.2` from commit `53b3618935f90dcc0f64993ccbb79514384404b0` with the required submodule and installs it under `/opt/metavision`.
+- `/opt/metavision/share/openeb-build-info.txt` records the verified OpenEB repository commit. `metavision_software_info -c` reports the vendor's internal SDK commit embedded in this release, not the OpenEB repository commit.
+- `metavision_software_info`, `metavision_platform_info`, `metavision_viewer`, `metavision_file_info` and the Prophesee HAL plugin are present in the final image.
+- `prophesee_ros_wrapper` `4.6.2`, commit `8eba7cecd19f31585032188a5daa5908c848e2c4`, builds as ordinary workspace source.
+- OpenEB identifies the connected device as Prophesee IMX636 HD / EVK4-HD, serial `00050673`, `1280x720`, EVT3, over USB 3.0. No firmware incompatibility warning appeared.
+- The pure profile publishes `/prophesee/camera/cd_events_buffer` and `/prophesee/camera/camera_info`, without enabling `/dvs/events` or GUI by default.
+- The official ROS Viewer profile launches and subscribes to both native topics. It intentionally produces no `/dvs_rendering` image topic.
+- With the adapter enabled, `/dvs/events` is `dvs_msgs/EventArray`, `/dvs/camera_info` is `sensor_msgs/CameraInfo`, and `/dvs/set_camera_info` is available.
+- A paired live comparison checked 51 native/adapted batches and 32,459 events; dimensions, coordinates, polarity, per-event timestamps and per-batch counts matched.
+- Default `event_delta_t=0.001` produced roughly 800 event messages per second in the tested scene. This rate varies with activity and callback scheduling.
+- A 4.012-second RAW contained 2,533,918 CD events. `metavision_file_info` and the project RAW checker agreed on serial, dimensions, EVT3, duration and event count.
+- A 2.010-second RAW strict conversion produced 1,502,781 RAW events and 1,502,781 bag events, with difference 0.
+- Live normalized rosbag recording, `rosbag info`, `rosbag check`, `rosbag play --clock --pause`, and playback through `dvs_renderer` succeeded. The renderer output was `1280x720` `bgr8`.
+- The EVK4 calibration profile launched the driver, adapter, renderer, `dvs_calibration`, three rqt image views and the start/reset/save services. Only reset was called; no EVK4 calibration YAML was created.
+- The ROS CameraInfo to OpenCV/Kalibr exporter passed matrix and resolution checks using a temporary structural fixture outside the persistent EVK4 calibration path.
+- The upstream `prophesee_ros_wrapper` and `rpg_dvs_ros` sources were not modified.
+
 Notes:
 
 - The live driver must run as root inside the privileged container because the USB device node is owned by `root:root` and requires write access.
@@ -51,3 +70,5 @@ Notes:
 - No DVXplorer hardware was connected during the 2026-08-16 validation, so its profiles were build- and launch-validated but not live-stream validated.
 - The calibration validation only confirmed dependencies, topics, services, image input, and GUI startup. It did not create or write camera intrinsics.
 - Only one DAVIS346 was connected for the calibration and rosbag validation in this update.
+- Only one EVK4-HD was connected for the EVK4 validation.
+- Permanent installation of `/etc/udev/rules.d/88-cyusb.rules` requires one interactive host `sudo` run. Validation used the current USB node permission; replug validation remains after that installation.

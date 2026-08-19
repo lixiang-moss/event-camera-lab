@@ -27,6 +27,7 @@
 - Compose service：`event-camera-ros`
 - ROS workspace：`ros_ws`
 - 当前上游驱动源码：`ros_ws/src/rpg_dvs_ros`
+- Prophesee 环境：OpenEB 4.6.2 + `prophesee_ros_wrapper` 4.6.2
 - 构建工具：`catkin_tools`
 - 相机底层库：`libcaer-dev`，由 iniVation PPA 提供
 
@@ -43,6 +44,8 @@ event-camera-lab/
     src/
       catkin_simple/
       event_camera_lab_bringup/
+      event_camera_prophesee_tools/
+      prophesee_ros_wrapper/
       rpg_dvs_ros/
   scripts/
     build_image.sh
@@ -52,6 +55,10 @@ event-camera-lab/
     launch_live_stream.sh
     open_shell.sh
     record_events.sh
+    record_prophesee_raw.sh
+    record_prophesee_rosbag.sh
+    replay_prophesee_raw.sh
+    convert_prophesee_raw_to_rosbag.sh
   docs/
     SOURCES.md
     USER_MANUAL.md
@@ -118,6 +125,9 @@ davis_ros_driver
 dvxplorer_ros_driver
 dvs_renderer
 dvs_file_writer
+prophesee_event_msgs
+prophesee_ros_driver
+event_camera_prophesee_tools
 ```
 
 如果只想构建一部分，可以覆盖 `PACKAGES`：
@@ -214,7 +224,35 @@ roslaunch event_camera_lab_bringup dvxplorer_live_stream.launch
 
 DVXplorer 没有 DAVIS 的 APS 灰度图像流，因此不会发布 `/dvs/image_raw`。需要实时画面时，使用第 5.2 节的 event renderer GUI profile。
 
-### 4.7 检查 ROS topics
+### 4.7 启动 Prophesee EVK4-HD
+
+EVK4 首次使用前安装宿主 udev 规则并重新插拔：
+
+```bash
+./scripts/install_prophesee_udev_rules.sh
+./scripts/check_usb.sh
+```
+
+纯驱动与官方 ROS Viewer profile：
+
+```bash
+CAMERA_PROFILE=prophesee_evk4 ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=prophesee_evk4_with_renderer ./scripts/launch_live_stream.sh
+```
+
+默认保留 `/prophesee/camera/cd_events_buffer` 和 `/prophesee/camera/camera_info`。需要现有 `dvs_msgs` 算法接口时显式开启适配器：
+
+```bash
+CAMERA_PROFILE=prophesee_evk4 \
+  EXTRA_ARGS="enable_dvs_adapter:=true" \
+  ./scripts/launch_live_stream.sh
+```
+
+此时增加 `/dvs/events`、`/dvs/camera_info` 和 `/dvs/set_camera_info`。默认事件聚合窗口为 1 ms；`event_delta_t:=0.0001` 可恢复官方 100 us。
+
+EVK4 以 OpenEB RAW 作为原始主档，以 rosbag 作为 ROS 实验派生格式。完整录制、回放、strict 转换和 LED 点阵标定流程见 [PROPHESEE_EVK4_GUIDE.md](PROPHESEE_EVK4_GUIDE.md)。
+
+### 4.8 检查 ROS topics
 
 另开一个终端，在项目根目录运行：
 
@@ -241,7 +279,7 @@ EVENT_TOPIC=/cam0/events ./scripts/check_topics.sh
 EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
 ```
 
-### 4.8 录制测试数据
+### 4.9 录制测试数据
 
 ```bash
 ./scripts/record_events.sh
@@ -354,6 +392,15 @@ CAMERA_PROFILE=dvxplorer_with_renderer \
 ```
 
 DVXplorer 的实时窗口显示事件累积图，不是传统相机帧。静止场景可能接近黑屏，移动相机、在镜头前移动物体或改变光照后应看到事件。
+
+### 5.3 EVK4-HD 实时画面
+
+```bash
+xhost +SI:localuser:root
+CAMERA_PROFILE=prophesee_evk4_with_renderer ./scripts/launch_live_stream.sh
+```
+
+该 profile 使用官方 `prophesee_ros_viewer` 直接显示 `/prophesee/camera/*` 原生事件，不生成 `/dvs_rendering`。需要 ROS 图像 topic 时，开启 `enable_dvs_adapter:=true` 后单独运行 `dvs_renderer`。结束 GUI 后可用 `xhost -SI:localuser:root` 收回授权。
 
 如果窗口已经打开但画面不明显，先在相机前挥手、移动相机，或改变光照。事件相机主要响应亮度变化，静止场景可能看起来接近黑屏。
 

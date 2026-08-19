@@ -3,7 +3,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/lib/common.sh"
 
-PACKAGES="${PACKAGES:-catkin_simple dvs_msgs dvs_ros_driver davis_ros_driver dvxplorer_ros_driver dvs_renderer dvs_file_writer event_camera_lab_bringup}"
+PACKAGES="${PACKAGES:-catkin_simple dvs_msgs dvs_ros_driver davis_ros_driver dvxplorer_ros_driver dvs_renderer dvs_file_writer prophesee_event_msgs prophesee_ros_driver event_camera_prophesee_tools dvs_calibration event_camera_lab_bringup}"
 
 run_in_container bash -lc "
   source /opt/ros/noetic/setup.bash

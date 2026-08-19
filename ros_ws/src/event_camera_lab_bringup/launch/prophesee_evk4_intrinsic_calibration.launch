@@ -1,0 +1,53 @@
+<launch>
+  <arg name="camera_name" default="camera" />
+  <arg name="camera_serial" default="unbound" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="output_namespace" default="dvs" />
+  <arg name="frame_id" default="event_camera_optical_frame" />
+  <arg name="camera_info_url"
+       default="file:///workspace/config/camera_info/prophesee_$(arg camera_serial).yaml" />
+  <arg name="dots_w" default="5" />
+  <arg name="dots_h" default="5" />
+  <arg name="dot_distance" default="0.05" />
+  <arg name="blinking_time_us" default="1000" />
+  <arg name="blinking_time_tolerance_us" default="500" />
+  <arg name="enough_transitions_threshold" default="100" />
+  <arg name="minimum_transitions_threshold" default="30" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/prophesee_evk4_live_stream.launch">
+    <arg name="camera_name" value="$(arg camera_name)" />
+    <arg name="camera_serial" value="$(arg camera_serial)" />
+    <arg name="event_delta_t" value="$(arg event_delta_t)" />
+    <arg name="enable_dvs_adapter" value="true" />
+    <arg name="output_namespace" value="$(arg output_namespace)" />
+    <arg name="frame_id" value="$(arg frame_id)" />
+    <arg name="camera_info_url" value="$(arg camera_info_url)" />
+  </include>
+
+  <node pkg="dvs_renderer" type="dvs_renderer" name="calibration_renderer" output="screen">
+    <param name="display_method" value="grayscale" />
+    <remap from="events" to="/$(arg output_namespace)/events" />
+    <remap from="camera_info" to="/$(arg output_namespace)/camera_info" />
+    <remap from="dvs_rendering" to="/$(arg output_namespace)/dvs_rendering" />
+  </node>
+
+  <node pkg="dvs_calibration" type="mono" name="dvs_calibration" output="screen">
+    <remap from="events" to="/$(arg output_namespace)/events" />
+    <remap from="camera_info" to="/$(arg output_namespace)/camera_info" />
+    <remap from="set_camera_info" to="/$(arg output_namespace)/set_camera_info" />
+    <param name="dots_w" value="$(arg dots_w)" />
+    <param name="dots_h" value="$(arg dots_h)" />
+    <param name="dot_distance" value="$(arg dot_distance)" />
+    <param name="blinking_time_us" value="$(arg blinking_time_us)" />
+    <param name="blinking_time_tolerance_us" value="$(arg blinking_time_tolerance_us)" />
+    <param name="enough_transitions_threshold" value="$(arg enough_transitions_threshold)" />
+    <param name="minimum_transitions_threshold" value="$(arg minimum_transitions_threshold)" />
+  </node>
+
+  <node pkg="rqt_image_view" type="rqt_image_view" name="event_rendering_view"
+        args="/$(arg output_namespace)/dvs_rendering" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="transition_map_view"
+        args="/dvs_calibration/visualization" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="detected_pattern_view"
+        args="/dvs_calibration/pattern" output="screen" />
+</launch>

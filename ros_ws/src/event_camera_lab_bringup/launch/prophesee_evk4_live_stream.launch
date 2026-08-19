@@ -1,0 +1,56 @@
+<launch>
+  <arg name="camera_name" default="camera" />
+  <arg name="camera_serial" default="unbound" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="bias_file" default="" />
+  <arg name="raw_file_to_read" default="" />
+  <arg name="enable_dvs_adapter" default="false" />
+  <arg name="output_namespace" default="dvs" />
+  <arg name="frame_id" default="event_camera_optical_frame" />
+  <arg name="camera_info_url"
+       default="file:///workspace/config/camera_info/prophesee_$(arg camera_serial).yaml" />
+
+  <node pkg="prophesee_ros_driver"
+        type="prophesee_ros_publisher"
+        name="event_camera_driver"
+        output="screen"
+        respawn="false"
+        if="$(eval arg('raw_file_to_read') == '')">
+    <param name="camera_name" value="$(arg camera_name)" />
+    <param name="publish_cd" value="true" />
+    <param name="bias_file" value="$(arg bias_file)" />
+    <param name="raw_file_to_read" value="$(arg raw_file_to_read)" />
+    <param name="event_delta_t" value="$(arg event_delta_t)" />
+    <param name="selected_serial" type="str" value="$(arg camera_serial)" />
+  </node>
+
+  <node pkg="event_camera_prophesee_tools"
+        type="prophesee_raw_publisher"
+        name="event_camera_driver"
+        output="screen"
+        respawn="false"
+        unless="$(eval arg('raw_file_to_read') == '')">
+    <param name="camera_name" value="$(arg camera_name)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <param name="raw_file_to_read" value="$(arg raw_file_to_read)" />
+    <param name="event_delta_t" value="$(arg event_delta_t)" />
+    <param name="selected_serial" type="str" value="$(arg camera_serial)" />
+    <param name="subscriber_wait_timeout" value="5.0" />
+  </node>
+
+  <group if="$(arg enable_dvs_adapter)" ns="$(arg output_namespace)">
+    <node pkg="event_camera_prophesee_tools"
+          type="prophesee_event_adapter"
+          name="event_adapter"
+          output="screen">
+      <param name="source_events_topic"
+             value="/prophesee/$(arg camera_name)/cd_events_buffer" />
+      <param name="source_camera_info_topic"
+             value="/prophesee/$(arg camera_name)/camera_info" />
+      <param name="frame_id" value="$(arg frame_id)" />
+      <param name="camera_name" value="prophesee_$(arg camera_serial)" />
+      <param name="camera_info_url" value="$(arg camera_info_url)" />
+      <param name="camera_info_rate" value="5.0" />
+    </node>
+  </group>
+</launch>

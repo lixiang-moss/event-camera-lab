@@ -63,6 +63,34 @@ CAMERA_PROFILE=dvxplorer_with_renderer ./scripts/launch_live_stream.sh
 Both DVXplorer profiles use project-owned launch files and publish events on
 `/dvs/events`. The GUI profile renders them on `/dvs_rendering`.
 
+For a Prophesee EVK4-HD, install the host udev rule once, then start the
+project-owned pure-driver or GUI profile:
+
+```bash
+./scripts/install_prophesee_udev_rules.sh
+CAMERA_PROFILE=prophesee_evk4 ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=prophesee_evk4_with_renderer ./scripts/launch_live_stream.sh
+```
+
+EVK4 keeps its native topics under `/prophesee/camera/*`. The optional
+`dvs_msgs` adapter is enabled explicitly:
+
+```bash
+CAMERA_PROFILE=prophesee_evk4 \
+  EXTRA_ARGS="enable_dvs_adapter:=true" \
+  ./scripts/launch_live_stream.sh
+```
+
+Record the original OpenEB RAW stream or the normalized ROS interface:
+
+```bash
+DURATION=60 ./scripts/record_prophesee_raw.sh
+DURATION=60 ./scripts/record_prophesee_rosbag.sh
+```
+
+See the EVK4 guide before collecting experiment data; RAW is the original
+archive and rosbag is the derived ROS format.
+
 This uses `roslaunch`, so it starts a ROS master automatically when one is not already running.
 
 In another terminal, inspect topics:
@@ -79,15 +107,23 @@ intentionally do not bind devices by serial number.
 
 - Full Chinese user manual: [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
 - DAVIS calibration and rosbag guide: [docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md](docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md)
+- Prophesee EVK4-HD guide: [docs/PROPHESEE_EVK4_GUIDE.md](docs/PROPHESEE_EVK4_GUIDE.md)
 - Upstream source record: [docs/SOURCES.md](docs/SOURCES.md)
 - Current validation notes: [docs/VALIDATION.md](docs/VALIDATION.md)
 - Thesis project plan: [event_camera_thesis_project_plan.md](event_camera_thesis_project_plan.md)
 
 ## Source Notice
 
+Project-authored code is licensed under the root [MIT License](LICENSE).
+Vendored third-party source remains under its own upstream license.
+
 This repository includes source code from:
 
 - `uzh-rpg/rpg_dvs_ros`
 - `catkin/catkin_simple`
+- `prophesee-ai/prophesee_ros_wrapper`
+
+The Docker image builds OpenEB from the pinned upstream source during image
+construction; OpenEB is not vendored into this repository.
 
 They are included as ordinary source folders for this thesis engineering workspace. See [docs/SOURCES.md](docs/SOURCES.md) and the upstream license files for details.

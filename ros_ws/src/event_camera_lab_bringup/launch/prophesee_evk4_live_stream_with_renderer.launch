@@ -1,0 +1,35 @@
+<launch>
+  <arg name="camera_name" default="camera" />
+  <arg name="camera_serial" default="unbound" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="bias_file" default="" />
+  <arg name="raw_file_to_read" default="" />
+  <arg name="enable_dvs_adapter" default="false" />
+  <arg name="output_namespace" default="dvs" />
+  <arg name="frame_id" default="event_camera_optical_frame" />
+  <arg name="camera_info_url"
+       default="file:///workspace/config/camera_info/prophesee_$(arg camera_serial).yaml" />
+  <arg name="display_accumulation_time" default="5000" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/prophesee_evk4_live_stream.launch">
+    <arg name="camera_name" value="$(arg camera_name)" />
+    <arg name="camera_serial" value="$(arg camera_serial)" />
+    <arg name="event_delta_t" value="$(arg event_delta_t)" />
+    <arg name="bias_file" value="$(arg bias_file)" />
+    <arg name="raw_file_to_read" value="$(arg raw_file_to_read)" />
+    <arg name="enable_dvs_adapter" value="$(arg enable_dvs_adapter)" />
+    <arg name="output_namespace" value="$(arg output_namespace)" />
+    <arg name="frame_id" value="$(arg frame_id)" />
+    <arg name="camera_info_url" value="$(arg camera_info_url)" />
+  </include>
+
+  <node pkg="prophesee_ros_driver"
+        type="prophesee_ros_viewer"
+        name="prophesee_ros_viewer"
+        output="screen"
+        respawn="false">
+    <param name="camera_name" value="$(arg camera_name)" />
+    <param name="show_cd" value="true" />
+    <param name="display_accumulation_time" value="$(arg display_accumulation_time)" />
+  </node>
+</launch>

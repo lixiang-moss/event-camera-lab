@@ -8,13 +8,27 @@ ros_ws/logs/
 # Local data and recordings
 data/*
 !data/.gitkeep
+!data/prophesee/
+data/prophesee/*
+!data/prophesee/raw/
+!data/prophesee/rosbag/
+!data/prophesee/manifests/
+data/prophesee/raw/*
+data/prophesee/rosbag/*
+data/prophesee/manifests/*
+!data/prophesee/raw/.gitkeep
+!data/prophesee/rosbag/.gitkeep
+!data/prophesee/manifests/.gitkeep
 *.bag
+*.raw
 *.db3
 *.mcap
 
 # Device-specific camera calibration
 config/camera_info/*.yaml
 !config/camera_info/.gitkeep
+config/calibration/prophesee/*
+!config/calibration/prophesee/.gitkeep
 
 # Local environment
 .env

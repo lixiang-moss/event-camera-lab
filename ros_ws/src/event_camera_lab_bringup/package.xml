@@ -8,8 +8,11 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <exec_depend>davis_ros_driver</exec_depend>
+  <exec_depend>dvs_calibration</exec_depend>
   <exec_depend>dvxplorer_ros_driver</exec_depend>
   <exec_depend>dvs_renderer</exec_depend>
+  <exec_depend>event_camera_prophesee_tools</exec_depend>
+  <exec_depend>prophesee_ros_driver</exec_depend>
   <exec_depend>rqt_image_view</exec_depend>
   <exec_depend>rqt_reconfigure</exec_depend>
 </package>
