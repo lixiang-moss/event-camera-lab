@@ -1,0 +1,53 @@
+<launch>
+  <arg name="cam0_namespace" default="cam0" />
+  <arg name="cam1_namespace" default="cam1" />
+  <arg name="cam0_serial" />
+  <arg name="cam1_serial" />
+  <arg name="cam0_device_identifier" default="$(arg cam0_serial)" />
+  <arg name="cam1_device_identifier" default="$(arg cam1_serial)" />
+  <arg name="cam0_bias_file" default="" />
+  <arg name="cam1_bias_file" default="" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="sync_mode" default="standalone" />
+  <arg name="cam0_start_delay" default="0.25" />
+  <arg name="timestamp_offset_sec" default="0.0" />
+
+  <group ns="$(arg cam1_namespace)">
+    <node name="event_camera_driver" pkg="event_camera_prophesee_tools"
+          type="prophesee_dvs_driver" output="screen" required="true">
+      <param name="camera_serial" type="str" value="$(arg cam1_device_identifier)" />
+      <param name="camera_name" value="prophesee_$(arg cam1_serial)" />
+      <param name="frame_id" value="cam1_event_camera_optical_frame" />
+      <param name="camera_info_url" value="file:///root/.ros/camera_info/prophesee_$(arg cam1_serial).yaml" />
+      <param name="bias_file" value="$(arg cam1_bias_file)" />
+      <param name="event_delta_t" value="$(arg event_delta_t)" />
+      <param name="sync_mode" value="$(eval 'slave' if arg('sync_mode') == 'master_slave' else arg('sync_mode'))" />
+      <param name="timestamp_offset_sec" value="$(arg timestamp_offset_sec)" />
+      <param name="trigger_enabled" value="true" />
+      <param name="expected_width" value="640" />
+      <param name="expected_height" value="480" />
+      <param name="expected_generation_major" value="3" />
+      <param name="expected_system_ids" value="21,28" />
+    </node>
+  </group>
+
+  <group ns="$(arg cam0_namespace)">
+    <node name="event_camera_driver" pkg="event_camera_prophesee_tools"
+          type="prophesee_dvs_driver" output="screen" required="true"
+          launch-prefix="bash -lc 'sleep $(arg cam0_start_delay); exec &quot;$@&quot;' bash">
+      <param name="camera_serial" type="str" value="$(arg cam0_device_identifier)" />
+      <param name="camera_name" value="prophesee_$(arg cam0_serial)" />
+      <param name="frame_id" value="cam0_event_camera_optical_frame" />
+      <param name="camera_info_url" value="file:///root/.ros/camera_info/prophesee_$(arg cam0_serial).yaml" />
+      <param name="bias_file" value="$(arg cam0_bias_file)" />
+      <param name="event_delta_t" value="$(arg event_delta_t)" />
+      <param name="sync_mode" value="$(eval 'master' if arg('sync_mode') == 'master_slave' else arg('sync_mode'))" />
+      <param name="timestamp_offset_sec" value="$(arg timestamp_offset_sec)" />
+      <param name="trigger_enabled" value="true" />
+      <param name="expected_width" value="640" />
+      <param name="expected_height" value="480" />
+      <param name="expected_generation_major" value="3" />
+      <param name="expected_system_ids" value="21,28" />
+    </node>
+  </group>
+</launch>

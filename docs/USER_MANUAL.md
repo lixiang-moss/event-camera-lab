@@ -23,11 +23,12 @@
 - Host：Ubuntu 26.04
 - Container：Ubuntu 20.04
 - ROS：ROS Noetic
-- Docker image：`event-camera-lab:noetic`
-- Compose service：`event-camera-ros`
+- Docker images：`event-camera-lab:noetic`、`event-camera-lab:openeb31-noetic`
+- Compose services：`event-camera-ros`、`event-camera-openeb31-ros`
 - ROS workspace：`ros_ws`
 - 当前上游驱动源码：`ros_ws/src/rpg_dvs_ros`
-- Prophesee 环境：OpenEB 4.6.2 + `prophesee_ros_wrapper` 4.6.2
+- Prophesee EVK4：OpenEB 4.6.2 + `prophesee_ros_wrapper` 4.6.2
+- Prophesee EVK1-VGA：独立 OpenEB 3.1.2 镜像和 catkin 空间
 - 构建工具：`catkin_tools`
 - 相机底层库：`libcaer-dev`，由 iniVation PPA 提供
 
@@ -39,11 +40,13 @@
 event-camera-lab/
   docker/
     Dockerfile
+    Dockerfile.openeb31
     entrypoint.sh
   ros_ws/
     src/
       catkin_simple/
       event_camera_lab_bringup/
+      event_camera_msgs/
       event_camera_prophesee_tools/
       prophesee_ros_wrapper/
       rpg_dvs_ros/
@@ -58,10 +61,13 @@ event-camera-lab/
     record_prophesee_raw.sh
     record_prophesee_rosbag.sh
     replay_prophesee_raw.sh
+    replay_prophesee_raw_pair.sh
     convert_prophesee_raw_to_rosbag.sh
+    convert_prophesee_raw_pair_to_rosbag.sh
   docs/
     SOURCES.md
     USER_MANUAL.md
+    CAMERA_SUPPORT_MATRIX.md
   data/
   docker-compose.yml
   README.md
@@ -94,6 +100,12 @@ cd /home/lx/ec_xiangli
 event-camera-lab:noetic
 ```
 
+EVK1-VGA 使用隔离的 OpenEB 3.1 镜像：
+
+```bash
+CAMERA_PROFILE=prophesee_evk1_vga ./scripts/build_image.sh
+```
+
 ### 4.2 检查 USB 设备
 
 连接事件相机后运行：
@@ -113,6 +125,12 @@ event-camera-lab:noetic
 
 ```bash
 ./scripts/build_workspace.sh
+```
+
+EVK1-VGA 工作区使用独立 build/devel/log 空间：
+
+```bash
+CAMERA_PROFILE=prophesee_evk1_vga ./scripts/build_workspace.sh
 ```
 
 默认构建这些核心包：
@@ -196,7 +214,7 @@ CAMERA_PROFILE=current_davis_dual ./scripts/launch_live_stream.sh
 /cam1/imu
 ```
 
-当前双相机 profile 不指定 serial number，让 driver 自动连接可用设备。这样使用最简单，但要注意：`/cam0` 和 `/cam1` 对应哪一台物理相机不保证固定。重启、重新插拔 USB、启动顺序变化后，两台相机可能互换 namespace。如果后续实验需要严格区分左/右相机或固定标定关系，再改成 serial number 绑定。
+当前双相机 profile 默认不指定 serial number，让 driver 自动连接可用设备。此时 `/cam0` 和 `/cam1` 对应哪一台物理相机不保证固定。正式双目实验可以同时设置 `CAM0_SERIAL`、`CAM1_SERIAL`，并用 `REQUIRE_SERIALS=true` 强制检查左右身份。
 
 这里的 `current_davis_dual` 是纯驱动 profile，适合无界面采集、远程运行或只使用命令行检查 topic。需要同时观看两路实时事件画面时，使用第 5 节介绍的 `current_davis_dual_with_renderer`。
 
@@ -223,6 +241,18 @@ roslaunch event_camera_lab_bringup dvxplorer_live_stream.launch
 ```
 
 DVXplorer 没有 DAVIS 的 APS 灰度图像流，因此不会发布 `/dvs/image_raw`。需要实时画面时，使用第 5.2 节的 event renderer GUI profile。
+
+双目纯驱动、GUI 和标定入口：
+
+```bash
+CAMERA_PROFILE=dvxplorer_dual ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=dvxplorer_dual_with_renderer ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=dvxplorer_dual_calibration ./scripts/launch_live_stream.sh
+```
+
+默认可不填 serial；论文双目实验使用 `CAM0_SERIAL`、`CAM1_SERIAL` 和 `REQUIRE_SERIALS=true` 固定左右身份。当前这些新增双目入口尚未进行 DVXplorer 双机真机验证。
+
+双目标定前必须先为两台相机分别加载有效单目内参。缺少有效 `K/D` 时，项目 CameraInfo 门控不会把空参数交给上游双目标定器。
 
 ### 4.7 启动 Prophesee EVK4-HD
 
@@ -252,7 +282,28 @@ CAMERA_PROFILE=prophesee_evk4 \
 
 EVK4 以 OpenEB RAW 作为原始主档，以 rosbag 作为 ROS 实验派生格式。完整录制、回放、strict 转换和 LED 点阵标定流程见 [PROPHESEE_EVK4_GUIDE.md](PROPHESEE_EVK4_GUIDE.md)。
 
-### 4.8 检查 ROS topics
+EVK4 双目使用项目自有统一 `dvs_msgs` 驱动，必须提供两个不同 serial：
+
+```bash
+CAM0_SERIAL=00000001 CAM1_SERIAL=00000002 \
+CAMERA_PROFILE=prophesee_evk4_dual_with_renderer \
+  ./scripts/launch_live_stream.sh
+```
+
+EVK4 单目原生 topic 和官方 Viewer 行为不变。双目真机与同步精度尚待两台 EVK4 验证。
+
+### 4.8 启动 Prophesee EVK1-VGA
+
+EVK1-VGA 使用 OpenEB 3.1.2 隔离环境，脚本会根据 profile 自动切换容器：
+
+```bash
+CAMERA_PROFILE=prophesee_evk1_vga ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=prophesee_evk1_vga_with_renderer ./scripts/launch_live_stream.sh
+```
+
+单目发布 `/dvs/events`、`/dvs/camera_info` 和 `/dvs/ext_trigger`，GUI 输出 `/dvs_rendering`。双目必须提供不同的 `CAM0_SERIAL`、`CAM1_SERIAL`，固定 `/cam0`、`/cam1` 的物理身份。完整命令和验证边界见 [PROPHESEE_EVK1_VGA_GUIDE.md](PROPHESEE_EVK1_VGA_GUIDE.md)。
+
+### 4.9 检查 ROS topics
 
 另开一个终端，在项目根目录运行：
 
@@ -279,7 +330,7 @@ EVENT_TOPIC=/cam0/events ./scripts/check_topics.sh
 EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
 ```
 
-### 4.9 录制测试数据
+### 4.10 录制测试数据
 
 ```bash
 ./scripts/record_events.sh
@@ -367,7 +418,7 @@ EVENT_TOPIC=/cam0/events ./scripts/check_topics.sh
 EVENT_TOPIC=/cam1/events ./scripts/check_topics.sh
 ```
 
-此 GUI profile 同样不指定 serial number，所以两个窗口对应的物理相机在重启或重新插拔后可能互换。它适合当前不要求固定左右相机身份的实验；涉及双目标定时需要重新确认物理对应关系。
+此 GUI profile 默认不指定 serial number，所以两个窗口对应的物理相机可能互换。正式双目实验应设置两个 serial 并重新确认左右标定关系。
 
 ### 5.2 DVXplorer 实时画面
 
@@ -401,6 +452,15 @@ CAMERA_PROFILE=prophesee_evk4_with_renderer ./scripts/launch_live_stream.sh
 ```
 
 该 profile 使用官方 `prophesee_ros_viewer` 直接显示 `/prophesee/camera/*` 原生事件，不生成 `/dvs_rendering`。需要 ROS 图像 topic 时，开启 `enable_dvs_adapter:=true` 后单独运行 `dvs_renderer`。结束 GUI 后可用 `xhost -SI:localuser:root` 收回授权。
+
+### 5.4 EVK1-VGA 实时画面
+
+```bash
+xhost +SI:localuser:root
+CAMERA_PROFILE=prophesee_evk1_vga_with_renderer ./scripts/launch_live_stream.sh
+```
+
+该 profile 使用 `dvs_renderer + rqt_image_view`，显式订阅 `/dvs_rendering`。双目 GUI 对应使用 `prophesee_evk1_vga_dual_with_renderer`，输出 `/cam0/dvs_rendering` 和 `/cam1/dvs_rendering`。
 
 如果窗口已经打开但画面不明显，先在相机前挥手、移动相机，或改变光照。事件相机主要响应亮度变化，静止场景可能看起来接近黑屏。
 

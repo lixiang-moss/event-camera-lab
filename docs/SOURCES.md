@@ -30,7 +30,7 @@ Purpose in this project:
 
 - Build helper required by the imported `rpg_dvs_ros` ROS packages.
 
-## OpenEB
+## OpenEB 4.6.2
 
 - Repository: `prophesee-ai/openeb`
 - URL: `https://github.com/prophesee-ai/openeb`
@@ -45,6 +45,23 @@ Purpose in this project:
 - Provides HAL, EVK4-HD/IMX636 plugin, Driver API, Viewer, RAW decoding and file tools.
 - Docker clones the full tagged repository with submodules and verifies the exact commit during image build.
 - OpenEB source is built in a Docker stage and is not vendored into this Git repository.
+
+## OpenEB 3.1.2
+
+- Repository: `prophesee-ai/openeb`
+- URL: `https://github.com/prophesee-ai/openeb`
+- Version built: `3.1.2`
+- Commit built: `04022c2f1dac338d4dc6ec85d50fcfafd74f9989`
+- Recorded on: `2026-08-20`
+- Container install prefix: `/opt/metavision` in `event-camera-lab:openeb31-noetic`
+- License: OpenEB open-source license, copied in the image to `/opt/metavision/share/licenses/openeb/LICENSE_OPEN`
+
+Purpose in this project:
+
+- Provides the HAL, Driver API, Viewer and RAW tools used by EVK1 Gen3/Gen3.1 VGA.
+- Docker clones the complete `3.1.2` tag with submodules and verifies the exact commit.
+- The OpenEB 3.1 image and catkin build/devel/log spaces are separate from OpenEB 4.6.
+- OpenEB source is built in Docker and is not vendored into this repository.
 
 ## prophesee_ros_wrapper
 

@@ -1,0 +1,22 @@
+<launch>
+  <arg name="cam0_serial" />
+  <arg name="cam1_serial" />
+  <arg name="cam0_device_identifier" default="$(arg cam0_serial)" />
+  <arg name="cam1_device_identifier" default="$(arg cam1_serial)" />
+  <arg name="cam0_bias_file" default="" />
+  <arg name="cam1_bias_file" default="" />
+  <arg name="sync_mode" default="standalone" />
+  <arg name="timestamp_offset_sec" default="0.0" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/prophesee_evk1_vga_dual_live_stream.launch">
+    <arg name="cam0_serial" value="$(arg cam0_serial)" />
+    <arg name="cam1_serial" value="$(arg cam1_serial)" />
+    <arg name="cam0_device_identifier" value="$(arg cam0_device_identifier)" />
+    <arg name="cam1_device_identifier" value="$(arg cam1_device_identifier)" />
+    <arg name="cam0_bias_file" value="$(arg cam0_bias_file)" />
+    <arg name="cam1_bias_file" value="$(arg cam1_bias_file)" />
+    <arg name="sync_mode" value="$(arg sync_mode)" />
+    <arg name="timestamp_offset_sec" value="$(arg timestamp_offset_sec)" />
+  </include>
+  <include file="$(find event_camera_lab_bringup)/launch/stereo_event_calibration_core.launch" />
+</launch>

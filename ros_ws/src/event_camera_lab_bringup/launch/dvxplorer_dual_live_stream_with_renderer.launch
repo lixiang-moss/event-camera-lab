@@ -1,0 +1,35 @@
+<launch>
+  <arg name="cam0_namespace" default="cam0" />
+  <arg name="cam1_namespace" default="cam1" />
+  <arg name="cam0_serial" default="" />
+  <arg name="cam1_serial" default="" />
+  <arg name="display_method" default="red-blue" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/dvxplorer_dual_live_stream.launch">
+    <arg name="cam0_namespace" value="$(arg cam0_namespace)" />
+    <arg name="cam1_namespace" value="$(arg cam1_namespace)" />
+    <arg name="cam0_serial" value="$(arg cam0_serial)" />
+    <arg name="cam1_serial" value="$(arg cam1_serial)" />
+  </include>
+
+  <group ns="$(arg cam0_namespace)">
+    <node name="dvs_renderer" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+      <param name="display_method" value="$(arg display_method)" />
+      <remap from="events" to="/$(arg cam0_namespace)/events" />
+      <remap from="camera_info" to="/$(arg cam0_namespace)/camera_info" />
+      <remap from="dvs_rendering" to="/$(arg cam0_namespace)/dvs_rendering" />
+    </node>
+    <node name="image_view" pkg="rqt_image_view" type="rqt_image_view"
+          args="/$(arg cam0_namespace)/dvs_rendering" output="screen" />
+  </group>
+  <group ns="$(arg cam1_namespace)">
+    <node name="dvs_renderer" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+      <param name="display_method" value="$(arg display_method)" />
+      <remap from="events" to="/$(arg cam1_namespace)/events" />
+      <remap from="camera_info" to="/$(arg cam1_namespace)/camera_info" />
+      <remap from="dvs_rendering" to="/$(arg cam1_namespace)/dvs_rendering" />
+    </node>
+    <node name="image_view" pkg="rqt_image_view" type="rqt_image_view"
+          args="/$(arg cam1_namespace)/dvs_rendering" output="screen" />
+  </group>
+</launch>

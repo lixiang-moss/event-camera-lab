@@ -4,12 +4,16 @@
   <arg name="cam1_start_delay" default="1.0" />
   <arg name="aps_enabled" default="false" />
   <arg name="display_method" default="red-blue" />
+  <arg name="cam0_serial" default="" />
+  <arg name="cam1_serial" default="" />
 
   <include file="$(find event_camera_lab_bringup)/launch/dual_live_stream.launch">
     <arg name="cam0_namespace" value="$(arg cam0_namespace)" />
     <arg name="cam1_namespace" value="$(arg cam1_namespace)" />
     <arg name="cam1_start_delay" value="$(arg cam1_start_delay)" />
     <arg name="aps_enabled" value="$(arg aps_enabled)" />
+    <arg name="cam0_serial" value="$(arg cam0_serial)" />
+    <arg name="cam1_serial" value="$(arg cam1_serial)" />
   </include>
 
   <group ns="$(arg cam0_namespace)">

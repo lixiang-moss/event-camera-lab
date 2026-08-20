@@ -3,6 +3,9 @@ set -euo pipefail
 
 source "$(dirname "$0")/lib/common.sh"
 
+CAMERA_PROFILE="${CAMERA_PROFILE:-prophesee_evk4_calibration}"
+configure_runtime "${CAMERA_PROFILE}"
+
 ACTION="${1:-}"
 case "${ACTION}" in
   start|save|reset)
@@ -15,6 +18,6 @@ esac
 
 run_in_container bash -lc "
   source /opt/ros/noetic/setup.bash
-  source /workspace/ros_ws/devel/setup.bash
+  source ${ROS_DEVEL_SPACE}/setup.bash
   rosservice call /dvs_calibration/${ACTION}
 "

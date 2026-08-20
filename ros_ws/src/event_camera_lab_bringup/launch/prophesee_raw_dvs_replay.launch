@@ -1,0 +1,28 @@
+<launch>
+  <arg name="namespace" default="dvs" />
+  <arg name="raw_file" />
+  <arg name="timestamp_offset_sec" />
+  <arg name="timestamp_base_us" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="with_renderer" default="false" />
+  <arg name="display_method" default="red-blue" />
+
+  <group ns="$(arg namespace)">
+    <node name="raw_publisher" pkg="event_camera_prophesee_tools"
+          type="prophesee_raw_dvs_publisher" output="screen">
+      <param name="raw_file_to_read" value="$(arg raw_file)" />
+      <param name="event_delta_t" value="$(arg event_delta_t)" />
+      <param name="timestamp_offset_sec" value="$(arg timestamp_offset_sec)" />
+      <param name="timestamp_base_us" value="$(arg timestamp_base_us)" />
+    </node>
+    <node if="$(arg with_renderer)" name="dvs_renderer" pkg="dvs_renderer"
+          type="dvs_renderer" output="screen">
+      <param name="display_method" value="$(arg display_method)" />
+      <remap from="events" to="/$(arg namespace)/events" />
+      <remap from="camera_info" to="/$(arg namespace)/camera_info" />
+      <remap from="dvs_rendering" to="/$(arg namespace)/dvs_rendering" />
+    </node>
+    <node if="$(arg with_renderer)" name="image_view" pkg="rqt_image_view"
+          type="rqt_image_view" args="/$(arg namespace)/dvs_rendering" output="screen" />
+  </group>
+</launch>

@@ -1,1371 +1,341 @@
-# 事件相机本科毕业论文项目梳理与当前任务计划
+# 事件相机本科毕业论文项目计划
 
-> 文件用途：作为当前毕业论文项目的主线说明、阶段计划和本周执行清单。  
-> 当前阶段重点：**先把 DAVIS346 在 Docker + ROS 环境中稳定跑通。**
+> 更新时间：2026-08-20
+> 当前阶段：多型号单双目实验基线准备与算法选型
 
----
+## 1. 论文目标
 
-## 1. 项目一句话定义
+在统一的软件环境、数据接口和评价方法下，让同一个事件相机算法运行于多种型号的单目和双目事件相机数据上，比较不同硬件及单双目配置对算法表现的影响。
 
-本项目的核心不是“把某一台事件相机接上电脑”，而是：
+主要研究问题：
 
-> **选择一个事件相机算法，在多种不同型号的事件相机上进行统一测试和对比，分析不同硬件平台对算法表现的影响。**
+- 不同事件相机的数据格式、分辨率、时间戳和噪声特性有何差异。
+- 如何建立与具体相机型号解耦的统一实验流程。
+- 不同硬件对算法准确率、延迟、资源消耗和稳定性有何影响。
+- 哪些硬件参数或成像特性能够解释实验结果差异。
+- 双目身份、标定和同步条件如何影响算法结果与可重复性。
 
-后期如果条件允许，还可能继续扩展：
+自行采集数据集和进一步发表属于后续扩展，不作为当前阶段的前置条件。
 
-> **使用较新的事件相机自行采集数据，制作数据集，并尝试形成可发表的实验结果。**
+## 2. 当前起点
 
----
+event-camera-lab 已具备 DAVIS、DVXplorer、EVK4-HD 和 EVK1-VGA 的单目与双目软件入口。当前尚未完成各实验相机的真实标定，新增双目入口也需要按相机型号完成真机验证。
 
-# 2. 整个毕业论文的主线
+环境使用与验证细节参见：
 
-目前可以把整个项目分成四个阶段。
+- [项目使用手册](docs/USER_MANUAL.md)
+- [DAVIS 标定与 rosbag 指南](docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md)
+- [环境验证记录](docs/VALIDATION.md)
+- [第三方源码记录](docs/SOURCES.md)
+- [相机支持矩阵](docs/CAMERA_SUPPORT_MATRIX.md)
 
-## 阶段 A：硬件和软件环境跑通
+## 3. 后续总体路线
 
-目标：
+1. 完成各实验相机的单目标定和基线数据。
+2. 确定论文主算法和公开基准数据集。
+3. 定义统一输入、输出和评价指标。
+4. 建立单相机算法基线。
+5. 完成双目身份固定、内外参标定和同步验证。
+6. 建立双目算法基线。
+7. 执行多型号、单双目公平对比。
+8. 分析结果并完成论文。
 
-- 学会使用事件相机
-- 建立稳定的软件环境
-- 让 ROS 能识别相机
-- 能够获取事件数据
-- 能够记录数据
-- 熟悉不同相机的数据接口
+执行顺序先单目、后双目。数据集制作、标注和发布方案在主算法与实验协议确定后再定，不作为当前工程接入的前置条件。
 
-当前你就在这个阶段。
+## 4. 里程碑 M1：建立可信实验输入
 
-现在老师给了你：
+### 4.1 真实相机标定
 
-- 两台 DAVIS346
-- 一个用于 DAVIS346 的 ROS 驱动 GitHub 项目
-- 一个明确任务：先把相机连通并跑起来
+对实际参与实验的每台相机分别完成有效内参标定。DAVIS 使用 APS 棋盘格流程；无 APS 事件相机使用经过真机验证的 LED 点阵流程。
 
-这一阶段暂时不追求算法结果。
+要求：
 
----
+- DAVIS 使用 APS 灰度图，不使用事件渲染图进行普通棋盘格标定。
+- EVK1、EVK4、DVXplorer 不套用 DAVIS APS 流程。
+- 每台相机单独保存 YAML，不用一台相机的参数代替另一台。
+- 记录设备编号、镜头状态、分辨率、棋盘格规格和标定日期。
+- 标定后验证 YAML 能在容器重启后自动加载。
+- 检查 camera_info 中的 D、K、R、P。
+- 标定完成后不再调整镜头焦距。
 
-## 阶段 B：统一算法测试框架
+验收标准：
 
-目标：
+- [ ] 每台实验相机都有自己的有效 YAML。
+- [ ] 重启 driver 后能够自动加载正确 YAML。
+- [ ] camera_info 持续发布且参数有效。
+- [ ] 校正图像边缘没有明显异常畸变。
+- [ ] 标定元数据已写入实验记录。
 
-选择一个事件相机算法，并建立统一实验框架。
+标定 YAML 保存在本机 config/camera_info/，不提交到公开 GitHub。
 
-例如：
+### 4.2 单相机基线 rosbag
 
-```text
-                 同一个算法
-                     |
-        -----------------------------
-        |           |          |    |
-      Camera A   Camera B   Camera C Camera D
-        |           |          |    |
-        -----------------------------
-                     |
-                 对比结果
-```
+为每台准备参与实验的相机录制短时工程验证 bag。
 
-后续可能测试约四种不同型号的事件相机。
+每个 bag 根据设备能力和实验需要记录：
 
-比较内容可能包括：
+- 原始事件。
+- IMU。
+- APS 图像。
+- 已加载标定参数后的 camera_info。
 
-- 算法准确率
-- 延迟
-- Event Rate
-- 噪声
-- 时间分辨率
-- 空间分辨率
-- 数据质量
-- CPU / GPU 消耗
-- 算法稳定性
-- 不同场景表现
+每次录制同时保存：
 
-真正的论文实验，大概率主要发生在这一阶段。
+- 相机型号和设备编号。
+- driver 参数和分辨率。
+- 场景、光照和运动方式。
+- 录制时间、topic 列表和消息数量。
+- bag 文件大小与校验值。
 
----
+验收标准：
 
-## 阶段 C：多型号事件相机对比
+- [ ] rosbag info 内容符合预期。
+- [ ] rosbag check 通过。
+- [ ] 离线回放时原始事件持续发布。
+- [ ] renderer 和 GUI 能显示回放画面。
+- [ ] bag、配置和物理设备能够相互追溯。
 
-这一阶段需要解决一个重要问题：
+### 4.3 双目工程基线
 
-> 不同事件相机产生的数据格式、分辨率、时间戳、噪声特性可能不同。
+对进入正式双目实验的每组相机完成：
 
-因此不能简单地：
+- 用 serial 固定 cam0/cam1 物理身份。
+- 分别完成左右内参和双目外参标定。
+- 验证硬件同步或外部 Trigger，并测量 offset、drift 和 jitter。
+- 记录同步模式、接线、USB 拓扑、事件聚合窗口和丢包情况。
+- 同时录制两路数据并验证离线回放。
 
-```text
-换一个相机
-↓
-直接运行算法
-↓
-比较结果
-```
+验收标准：
 
-而应该建立一个统一的数据处理流程：
-
-```text
-不同事件相机
-       |
-       v
-数据读取 / ROS Driver
-       |
-       v
-数据格式统一
-       |
-       v
-预处理
-       |
-       v
-同一个算法
-       |
-       v
-统一指标评价
-```
-
-这一部分很可能成为论文中比较有价值的工程内容。
-
----
-
-## 阶段 D：自行采集数据集
-
-这是后期扩展方向。
-
-如果前面的系统稳定，可能会使用新的事件相机自行采集数据集。
-
-基本流程：
-
-```text
-实验设计
-  |
-  v
-相机配置
-  |
-  v
-时间同步
-  |
-  v
-数据采集
-  |
-  v
-数据清洗
-  |
-  v
-标注
-  |
-  v
-数据格式整理
-  |
-  v
-Dataset
-  |
-  v
-算法实验
-```
-
-如果数据集有价值、实验设计合理，这部分才有可能进一步形成论文或发表成果。
-
----
-
-# 3. 当前真正应该关注什么
-
-## 当前不要把注意力放在整个毕业论文上
-
-现在最重要的事情只有一个：
-
-> **把 DAVIS346 稳定跑起来。**
-
-不要同时处理：
-
-- 四台相机
-- 多机同步
-- 数据集制作
-- 最终算法
-- 论文写作
-- 发表
-
-这些以后再做。
-
-当前阶段需要建立第一条完整链路：
-
-```text
-DAVIS346
-   |
-   | USB
-   v
-Ubuntu Host
-   |
-   v
-Docker
-   |
-   v
-Ubuntu 20.04
-   |
-   v
-ROS1
-   |
-   v
-DAVIS ROS Driver
-   |
-   v
-ROS Topic
-   |
-   v
-Event Data
-```
-
-只要这一条链真正跑通，后面的事情才有基础。
-
----
-
-# 4. 为什么现在需要 Docker
-
-你的宿主系统比较新。
-
-当前情况可以理解成：
-
-```text
-Host
-Ubuntu 26.x
-```
-
-但老师给你的 ROS 项目属于较旧的软件栈。
-
-它可能依赖：
-
-```text
-Ubuntu 20.04
-+
-ROS Noetic
-+
-旧版依赖
-+
-DAVIS Driver
-```
-
-直接把老 ROS 项目安装到新系统里，容易出现：
-
-- ROS 版本不兼容
-- Python 版本不兼容
-- CMake 版本差异
-- Eigen / OpenCV 版本问题
-- libcaer 版本冲突
-- catkin 编译问题
-- ROS package 缺失
-- 系统库 ABI 不兼容
-
-因此 Docker 的作用是：
-
-> **在你的 Ubuntu 26 系统中创建一个相对独立的 Ubuntu 20.04 + ROS 环境。**
-
-可以把它想成：
-
-```text
-Ubuntu 26 Host
-|
-+-- Docker Container
-       |
-       +-- Ubuntu 20.04
-       |
-       +-- ROS Noetic
-       |
-       +-- DAVIS Driver
-```
-
-这样不用为了运行旧项目去破坏宿主系统。
-
----
-
-# 5. Docker 在这里最大的难点
-
-普通软件跑在 Docker 中通常比较直接。
-
-但你现在需要访问：
-
-> **真实 USB 硬件：DAVIS346**
-
-因此问题会多一层。
-
-完整链路是：
-
-```text
-DAVIS346
-   |
-   | USB
-   v
-Linux Kernel
-   |
-   v
-/dev/bus/usb
-   |
-   v
-Docker Container
-   |
-   v
-libusb / libcaer
-   |
-   v
-ROS Driver
-```
-
-所以 Docker 是否成功，不只是看：
+- [ ] 左右设备、标定文件和 namespace 可追溯。
+- [ ] 双目内外参来自真实标定。
+- [ ] 同步方式和误差有测量记录。
+- [ ] 两路数据可同时录制、检查和回放。
+- [ ] 未验证的同步能力不进入论文结论。
 
-```bash
-roscore
-```
+### 4.4 DVXplorer 真机验证
 
-能不能运行。
+拿到 DVXplorer 硬件后执行：
 
-还必须确认：
+- 检查 Host 和 Docker 的 USB 可见性。
+- 验证纯驱动 profile 的事件输出。
+- 验证 GUI profile 的 /dvs_rendering。
+- 记录 IMU、分辨率、时间戳和默认 driver 参数。
+- 完成短时 rosbag 录制、检查和回放。
 
-> Docker 容器能不能看到 DAVIS346。
+验收标准：
 
----
+- [ ] /dvs/events 有稳定频率。
+- [ ] /dvs_rendering 能显示实时事件。
+- [ ] 真实设备参数已加入相机清单。
+- [ ] DVXplorer bag 能进入统一离线处理流程。
 
-# 6. 老师给的 GitHub 项目
+## 5. 里程碑 M2：确定论文算法
 
-当前老师给出的 GitHub 项目已确认为：
+候选方向：
 
-```text
-https://github.com/uzh-rpg/rpg_dvs_ros
-```
+- 事件特征检测与跟踪。
+- 事件光流。
+- 事件角点或运动估计。
+- 事件目标检测或分类。
 
-这是一套较老的 ROS1 事件相机软件栈。
+选型标准：
 
-它与 DAVIS / DVS 相机有关。
+- 有公开论文、源码和可获取的数据集。
+- 能读取原始事件，不依赖单一厂商私有格式。
+- 可以在 ROS bag 或统一转换格式上离线运行。
+- 有明确、可重复计算的准确率指标。
+- 推理时间和资源消耗可以测量。
+- 不依赖当前无法获得的专用硬件。
+- 能在毕业论文周期内完成复现和多相机对比。
 
-当前应以这个仓库作为 DAVIS346 跑通阶段的主项目。
+算法选型记录至少包括：
 
-仓库基本信息：
+- 算法名称、论文和源码。
+- 输入要求和输出结果。
+- 官方评价指标和数据集。
+- 运行环境和主要依赖。
+- 选择理由与已知限制。
 
-- Repository：`uzh-rpg/rpg_dvs_ros`
-- URL：`https://github.com/uzh-rpg/rpg_dvs_ros`
-- 默认分支：`master`
-- 支持环境：ROS Kinetic / Melodic / Noetic
-- 对应系统：Ubuntu 16.04 / 18.04 / 20.04
-- 当前推荐组合：Ubuntu 20.04 + ROS Noetic
-- DAVIS 相机对应编译目标：`davis_ros_driver`
-- 主要依赖：`libcaer-dev`、`catkin_simple`、`python3-catkin-tools`、ROS camera/image 相关包
+验收标准：
 
-其中可能涉及：
+- [ ] 与指导老师确认一个主算法。
+- [ ] 确定一个公开数据集作为正确性基准。
+- [ ] 在原作者推荐环境中复现至少一个示例。
+- [ ] 明确算法输入与当前 ROS topic 的转换关系。
 
-- DAVIS ROS Driver
-- Event Message
-- ROS Topic
-- 数据录制
-- Event Camera 工具
+## 6. 里程碑 M3：建立统一实验框架
 
----
+统一框架必须将相机接入、数据适配和算法执行分离：
 
-# 7. 当前系统的软件层次
+1. Camera driver 或 rosbag 提供原始数据。
+2. 适配层转换为统一事件数据。
+3. 可选预处理处理分辨率和噪声差异。
+4. 同一算法处理所有相机数据。
+5. 评价程序生成统一结果文件。
 
-建议脑子里始终保持下面这个结构。
+### 6.1 统一输入
 
-```text
-ROS Node
-   |
-   v
-DAVIS ROS Driver
-   |
-   v
-libcaer / camera library
-   |
-   v
-libusb
-   |
-   v
-Linux USB
-   |
-   v
-DAVIS346
-```
+至少统一：
 
-几个东西不要混：
+- x、y。
+- timestamp 及其单位和时间基准。
+- polarity。
+- 图像宽度和高度。
+- 相机型号与设备标识。
 
-## ROS
+原始数据必须保留。转换和预处理结果写入派生数据，不覆盖原始 bag。
 
-负责：
+### 6.2 相机 profile
 
-- Node
-- Topic
-- Message
-- 数据流
-- rosbag
+每种相机的 profile/config 记录：
 
-ROS 本身不是 DAVIS346 的底层驱动。
+- driver package 和 launch。
+- topic 映射。
+- 分辨率。
+- polarity 定义。
+- 时间戳格式。
+- 事件过滤参数。
+- APS 和 IMU 支持情况。
+- 标定文件位置。
 
----
+通用算法代码中不得写死 DAVIS346、DVXplorer 或固定分辨率。
 
-## DAVIS ROS Driver
+### 6.3 统一输出
 
-作用：
+每次实验至少输出：
 
-> 把相机数据转换成 ROS 可以使用的数据。
+- 实验 ID 和 Git commit。
+- 相机、数据集和 bag 标识。
+- 算法配置。
+- 运行时间。
+- 核心准确率指标。
+- CPU、GPU 和内存信息。
+- 异常、丢帧或失败状态。
 
----
+使用 CSV、JSON 或 YAML 保存结构化结果，不以终端截图作为正式结果。
 
-## libcaer
+验收标准：
 
-作用更靠近设备。
+- [ ] 同一条算法入口可处理不同相机 profile。
+- [ ] 相机差异只存在于配置和数据适配层。
+- [ ] 实验结果可以自动汇总。
+- [ ] 任意结果都能追溯到代码、数据和配置。
 
-可以理解为：
+## 7. 里程碑 M4：多型号公平对比
 
-> 与事件相机硬件通信的软件库。
+### 7.1 指标
 
----
+最终指标根据所选算法确定，至少考虑：
 
-## libusb
+- 算法准确率或任务指标。
+- 端到端延迟和单位事件处理时间。
+- CPU、GPU 和峰值内存。
+- Event Rate。
+- 噪声和无效事件比例。
+- 算法失败率与稳定性。
 
-负责 Linux 用户空间程序与 USB 设备通信。
+### 7.2 公平性约束
 
----
+- 所有相机运行同一算法版本和评价代码。
+- 配置差异必须记录并说明原因。
+- 不为某一型号手工挑选有利片段。
+- 每个正式实验至少重复三次。
+- 报告平均值、标准差和异常情况。
+- 分辨率不同时分别报告原始结果和归一化结果。
+- 在线比较时控制场景、光照、轨迹和时间窗口。
 
-## Linux Kernel
+### 7.3 结果分析
 
-真正管理 USB 设备。
+需要分析：
 
----
+- 分辨率对精度和计算量的影响。
+- Event Rate 对延迟和数据丢失的影响。
+- 噪声对误检测的影响。
+- 时间戳精度对运动任务的影响。
+- driver 和数据转换引入的额外开销。
+- 相同算法参数在不同硬件上的实际含义。
 
-# 8. 本周任务
+验收标准：
 
-这一周建议只设一个总目标：
+- [ ] 至少两种相机型号完成同一算法测试。
+- [ ] 每个核心指标都有统一定义。
+- [ ] 实验可重复并包含方差。
+- [ ] 结论能够由数据和图表支持。
 
-> **在 Docker 中运行 DAVIS346 ROS Driver，并成功获取相机数据。**
+## 8. 单双目任务边界
 
-不要把目标写成：
+单目和双目实验均为论文必做，但按顺序实施：
 
-> 学习 Docker。
+1. 单目先完成统一数据接口、算法基线和多型号对比。
+2. 双目随后固定左右 serial，完成两台内参、双目外参和同步测量。
+3. 双目算法只能使用已验证身份、标定和同步的数据。
 
-也不要写成：
+DAVIS、DVXplorer 双目 profile 默认允许不填 serial，便于 bring-up；正式实验必须启用 serial 固定。EVK1、EVK4 双目 profile 已强制要求两个不同 serial。
 
-> 学习 ROS。
+软件入口可用不等于双目系统已验证。未完成两台真机、同步线、外部脉冲和标定实测前，不声明左右时间轴同步，也不报告双目算法正式结果。
 
-这些只是工具。
+## 9. 当前任务看板
 
-真正的验收结果必须是：
+### P0：下一步
 
-> **DAVIS346 → Docker → ROS → Event Topic 跑通。**
+- [ ] 为实际参与实验的每台相机完成真实内参标定。
+- [ ] 录制并归档可追溯的单相机基线 RAW/bag。
+- [ ] 与指导老师确定主算法和公开基准数据集。
+- [ ] 写出算法输入、输出和评价指标定义。
+- [ ] 在公开数据集上复现算法基线。
 
----
+### P1：统一实验
 
-# 9. 本周任务拆解
+- [ ] 定义统一事件数据结构和相机 profile schema。
+- [ ] 实现 ROS bag 到算法输入的适配层。
+- [ ] 建立结构化实验配置和结果目录。
+- [ ] 自动采集运行时间、CPU、GPU 和内存指标。
+- [ ] 拿到 DVXplorer 后完成真机验证和基线 bag。
+- [ ] 让同一算法处理至少两种相机数据。
+- [ ] 为每种正式双目组合固定左右 serial 并完成内外参标定。
+- [ ] 完成双目硬件同步、Trigger 和时间误差测量。
+- [ ] 建立同一算法的双目输入与评价入口。
 
-## Task 1：确认硬件在宿主 Ubuntu 中可见
+### P2：论文实验
 
-先不要碰 Docker。
+- [ ] 冻结实验协议和指标实现。
+- [ ] 执行多型号重复实验。
+- [ ] 汇总均值、标准差和失败案例。
+- [ ] 分析硬件差异与算法表现的关系。
+- [ ] 对比单目与双目配置的性能和稳定性。
+- [ ] 生成论文表格、图和实验章节。
 
-连接一台 DAVIS346。
+### P3：可选扩展
 
-在宿主机确认 USB 设备存在。
+- [ ] 设计可控场景的自采数据集。
+- [ ] 建立标注、版本和发布规范。
+- [ ] 评估进一步投稿的实验增量。
 
-例如：
+## 10. 建议的论文结构
 
-```bash
-lsusb
-```
+1. 引言与研究问题
+2. 事件相机原理与相关工作
+3. 多型号事件相机实验平台
+4. 统一数据接口与算法适配方法
+5. 实验设计与评价指标
+6. 多型号对比结果
+7. 结果分析与局限
+8. 总结与未来工作
 
-如果宿主机都看不到相机，Docker 更不可能看到。
+工程环境不是论文最终目标。论文价值应落在统一方法、可重复实验、硬件差异分析和有证据支持的结论上。
 
-### 验收标准
+## 11. 实验记录要求
 
-宿主 Ubuntu 能识别 DAVIS346 USB 设备。
+每次正式实验必须记录：
 
----
+- 日期和实验 ID。
+- 研究假设。
+- 相机型号、设备编号和标定版本。
+- 数据集或 bag 文件及校验值。
+- driver、算法和仓库 commit。
+- 完整配置和运行命令。
+- 原始结果和汇总指标。
+- 异常、失败原因和下一步动作。
 
-## Task 2：确认老师给的 GitHub 仓库
-
-记录：
-
-- GitHub URL
-- Branch
-- README
-- ROS 版本
-- Ubuntu 版本
-- 依赖
-- 编译方式
-- 是否需要 libcaer
-- 是否有 DAVIS346 示例命令
-
-不要一开始就乱装包。
-
-先确认项目要求什么环境。
-
-### 验收标准
-
-至少能回答：
-
-```text
-这个项目要求：
-Ubuntu = ?
-ROS = ?
-Python = ?
-libcaer = ?
-Build System = catkin / catkin_tools / ?
-```
-
----
-
-## Task 3：建立 Ubuntu 20.04 Docker 环境
-
-目标：
-
-创建一个能长期复用的开发容器。
-
-推荐结构：
-
-```text
-Dockerfile
-docker-compose.yml
-catkin_ws/
-README.md
-```
-
-不要长期靠一条巨长的：
-
-```bash
-docker run ...
-```
-
-手动启动。
-
-后期参数越来越多以后很难维护。
-
----
-
-## Task 4：在 Docker 中安装 ROS
-
-如果仓库确实要求 Ubuntu 20.04 + ROS1，那么通常对应：
-
-```text
-Ubuntu 20.04
-ROS Noetic
-```
-
-完成后至少测试：
-
-```bash
-roscore
-```
-
-能够正常启动。
-
-### 验收标准
-
-Docker 内 ROS 环境正常。
-
----
-
-## Task 5：把 GitHub 项目放进 catkin workspace
-
-典型目录结构：
-
-```text
-~/catkin_ws/
-|
-+-- src/
-|    |
-|    +-- rpg_dvs_ros/
-|
-+-- build/
-+-- devel/
-```
-
-然后按照仓库 README 安装依赖。
-
-可能涉及：
-
-```bash
-rosdep
-catkin_make
-```
-
-或：
-
-```bash
-catkin build
-```
-
-具体以仓库要求为准。
-
----
-
-## Task 6：解决编译问题
-
-这里很可能是本周最耗时间的部分。
-
-每出现一个错误，都要记录。
-
-不要采取：
-
-```text
-报错
-↓
-Google
-↓
-复制命令
-↓
-又报错
-↓
-再复制
-```
-
-这种方式。
-
-推荐记录：
-
-```text
-Error:
-...
-
-Cause:
-...
-
-Solution:
-...
-
-Result:
-...
-```
-
-以后第二台电脑或第二个容器可以直接复现。
-
----
-
-# 10. Docker 访问 DAVIS346
-
-这是当前最关键的 Docker 问题。
-
-容器启动时，需要把 USB 设备暴露给 Docker。
-
-常见方式之一是映射：
-
-```text
-/dev/bus/usb
-```
-
-概念上类似：
-
-```bash
-docker run \
-  --device=/dev/bus/usb \
-  ...
-```
-
-实际参数需要根据 Docker 和设备情况调整。
-
-调试早期也可能临时使用更宽松的权限模式。
-
-但是：
-
-> `--privileged`
-
-适合排错，不建议长期作为最终方案。
-
-最终应该尽量明确：
-
-- USB Device
-- udev rule
-- 用户权限
-- device mapping
-
----
-
-# 11. Docker 内第一项硬件测试
-
-进入 Docker 后运行：
-
-```bash
-lsusb
-```
-
-必须看到 DAVIS346。
-
-这是一个非常重要的分界点。
-
----
-
-## 情况 A
-
-宿主机：
-
-```text
-DAVIS visible
-```
-
-Docker：
-
-```text
-DAVIS visible
-```
-
-说明 USB passthrough 基本成功。
-
-接下来检查相机库和 ROS Driver。
-
----
-
-## 情况 B
-
-宿主机：
-
-```text
-DAVIS visible
-```
-
-Docker：
-
-```text
-DAVIS NOT visible
-```
-
-问题基本就在：
-
-- Docker device mapping
-- permissions
-- udev
-- container privilege
-
-不要去改 ROS。
-
----
-
-## 情况 C
-
-宿主机本身：
-
-```text
-DAVIS NOT visible
-```
-
-先检查：
-
-- USB 线
-- USB 接口
-- 相机供电
-- Linux USB
-- 硬件状态
-
-此时 Docker 和 ROS 都不是重点。
-
----
-
-# 12. ROS Driver 启动后的验证
-
-Driver 成功启动并不等于任务完成。
-
-必须继续检查 ROS 数据。
-
-先查看：
-
-```bash
-rostopic list
-```
-
-目标是出现 DAVIS 相关 Topic。
-
-可能包括：
-
-```text
-/events
-/imu
-/image_raw
-/camera_info
-...
-```
-
-具体名称由 Driver 决定。
-
----
-
-然后检查：
-
-```bash
-rostopic hz <event_topic>
-```
-
-确认事件数据持续产生。
-
----
-
-如果有合适工具，还可以进一步观察：
-
-- Event Stream
-- APS Frame
-- IMU
-- Camera Info
-
----
-
-# 13. 当前阶段 Definition of Done
-
-只有满足下面这些条件，才能认为：
-
-> “DAVIS346 已经跑通。”
-
-## Level 1：Host
-
-- [ ] DAVIS346 接入电脑
-- [ ] `lsusb` 能看到设备
-
-## Level 2：Docker
-
-- [ ] Ubuntu 20.04 Container 能启动
-- [ ] Docker 内 `lsusb` 能看到 DAVIS346
-
-## Level 3：ROS
-
-- [ ] ROS 环境正常
-- [ ] `roscore` 能运行
-
-## Level 4：Driver
-
-- [ ] GitHub 项目成功编译
-- [ ] DAVIS Driver 能启动
-- [ ] Driver 能识别 DAVIS346
-
-## Level 5：Data
-
-- [ ] `rostopic list` 能看到 Event Topic
-- [ ] Event Topic 有持续数据
-- [ ] 移动相机时 Event Rate 明显变化
-
-## Level 6：Recording
-
-- [ ] 能使用 rosbag 或对应工具录制数据
-- [ ] 能重新读取录制的数据
-
-完成 Level 6 后，第一阶段才算真正结束。
-
----
-
-# 14. 建议的本周执行顺序
-
-不要同时做很多事情。
-
-严格按照下面顺序：
-
-```text
-1. DAVIS 插到 Ubuntu
-        |
-        v
-2. Host lsusb
-        |
-        v
-3. 确认 GitHub README
-        |
-        v
-4. 建 Ubuntu20 Docker
-        |
-        v
-5. 安装 ROS
-        |
-        v
-6. Docker lsusb
-        |
-        v
-7. clone ROS Driver
-        |
-        v
-8. 安装依赖
-        |
-        v
-9. 编译
-        |
-        v
-10. 启动 Driver
-        |
-        v
-11. rostopic list
-        |
-        v
-12. Event 数据验证
-        |
-        v
-13. rosbag 录制
-```
-
-每一步成功以后再继续。
-
-不要跨步骤。
-
----
-
-# 15. 推荐的工作目录
-
-建议在宿主机建立统一项目目录。
-
-例如：
-
-```text
-event_camera_thesis/
-|
-+-- docker/
-|    |
-|    +-- Dockerfile
-|    +-- docker-compose.yml
-|
-+-- catkin_ws/
-|    |
-|    +-- src/
-|
-+-- data/
-|    |
-|    +-- raw/
-|    +-- test/
-|
-+-- logs/
-|
-+-- docs/
-|    |
-|    +-- project_plan.md
-|    +-- setup_notes.md
-|    +-- troubleshooting.md
-|
-+-- scripts/
-```
-
-不要把东西散落在：
-
-```text
-Downloads/
-Desktop/
-test/
-test2/
-final/
-final2/
-```
-
-项目一旦进入四台相机阶段，这种目录会迅速失控。
-
----
-
-# 16. 从现在开始建立实验日志
-
-建议每天至少记录：
-
-```markdown
-## Date
-
-2026-08-12
-
-## Goal
-
-Docker 中识别 DAVIS346
-
-## Environment
-
-Host:
-Ubuntu 26.x
-
-Container:
-Ubuntu 20.04
-
-ROS:
-Noetic
-
-Camera:
-DAVIS346 #1
-
-## Commands
-
-...
-
-## Result
-
-...
-
-## Error
-
-...
-
-## Solution
-
-...
-
-## Next Step
-
-...
-```
-
-目的不是写日记。
-
-目的是：
-
-> 三个月以后依然可以完整复现今天的环境。
-
----
-
-# 17. 两台 DAVIS346 现在怎么用
-
-目前不要急着双相机同步。
-
-建议：
-
-## 第一步
-
-只连接：
-
-```text
-DAVIS346 #1
-```
-
-把整个 ROS 链路跑通。
-
----
-
-## 第二步
-
-换成：
-
-```text
-DAVIS346 #2
-```
-
-验证同一个环境也能识别第二台。
-
----
-
-## 第三步
-
-再考虑：
-
-```text
-DAVIS346 #1
-+
-DAVIS346 #2
-```
-
-同时运行。
-
-双机阶段才会开始遇到：
-
-- Serial Number
-- Device Selection
-- ROS Namespace
-- Topic Naming
-- USB Bandwidth
-- Timestamp
-- Hardware Synchronization
-
-这些不是本周第一优先级。
-
----
-
-# 18. 后续为什么会涉及时间同步
-
-等你测试不同型号的事件相机以后，多机同步可能成为重要问题。
-
-Event 数据通常包含：
-
-```text
-(x, y, t, polarity)
-```
-
-其中：
-
-```text
-t = timestamp
-```
-
-如果两个相机使用不同内部时钟：
-
-```text
-Camera A clock
-Camera B clock
-```
-
-那么：
-
-```text
-t_A
-```
-
-和：
-
-```text
-t_B
-```
-
-不一定属于同一时间基准。
-
-后面可能需要研究：
-
-- Hardware Trigger
-- External Clock
-- Master / Slave
-- PPS
-- Timestamp Offset
-- Clock Drift
-- Jitter
-
-但这些属于后续阶段。
-
-当前先不要因为同步问题耽误第一台相机跑通。
-
----
-
-# 19. 当前阶段最容易犯的错误
-
-## 错误 1：一开始就研究算法
-
-现在连稳定数据流都没有。
-
-先不要跑算法。
-
----
-
-## 错误 2：一开始就接两台相机
-
-变量太多。
-
-第一台先跑通。
-
----
-
-## 错误 3：Docker、ROS、Driver、USB 一起调
-
-出现错误以后无法定位问题在哪一层。
-
-应该分层验证。
-
----
-
-## 错误 4：只看 Driver 有没有启动
-
-Driver 打印：
-
-```text
-started successfully
-```
-
-并不能证明事件数据真的正常。
-
-必须检查 Topic 和数据频率。
-
----
-
-## 错误 5：环境调通以后不保存
-
-一定要保留：
-
-```text
-Dockerfile
-docker-compose.yml
-requirements
-Git commit
-README
-```
-
-否则下次重新安装又从头开始。
-
----
-
-# 20. 本周最低目标
-
-如果时间比较紧，本周最低完成：
-
-- [ ] Host 能识别 DAVIS346
-- [ ] Docker Ubuntu20 环境建立
-- [ ] Docker 能访问 DAVIS346
-- [ ] ROS 能运行
-- [ ] ROS Driver 能编译
-
----
-
-# 21. 本周理想目标
-
-最好完成：
-
-- [ ] DAVIS346 Driver 成功启动
-- [ ] ROS 能获取 Event Topic
-- [ ] Event 数据能够实时产生
-- [ ] 能录制一小段 rosbag
-- [ ] 能重新播放数据
-- [ ] 整个环境写进 Dockerfile / Compose
-- [ ] 留下一份完整安装记录
-
-如果做到这里，本周任务非常成功。
-
----
-
-# 22. 当前项目的优先级
-
-可以直接记住：
-
-```text
-Priority 1
-DAVIS346 跑通
-       |
-       v
-Priority 2
-稳定记录数据
-       |
-       v
-Priority 3
-第二台 DAVIS346
-       |
-       v
-Priority 4
-其他型号 Event Camera
-       |
-       v
-Priority 5
-统一算法
-       |
-       v
-Priority 6
-Benchmark
-       |
-       v
-Priority 7
-自行采集 Dataset
-       |
-       v
-Priority 8
-Publication
-```
-
-现在只盯住 Priority 1。
-
----
-
-# 23. 下一次实际操作时建议从哪里开始
-
-下一次打开电脑以后，不需要先研究论文。
-
-直接从下面开始：
-
-```bash
-lsusb
-```
-
-确认 DAVIS346。
-
-然后确认老师提供的 GitHub Repository。
-
-接下来开始建立：
-
-```text
-Ubuntu 20.04 Docker
-+
-ROS Noetic
-+
-DAVIS Driver
-```
-
-整个过程中，一次只解决一层问题。
-
----
-
-# 24. 当前项目的核心判断
-
-目前这个阶段的成功标准不是：
-
-> “我理解事件相机了。”
-
-也不是：
-
-> “Docker 装好了。”
-
-而是：
-
-> **我能把 DAVIS346 插进电脑，在 Docker 里的 ROS Driver 中识别它，并稳定接收到 Event Data。**
-
-只要这件事情完成，你的毕业论文工程基础就真正建立起来了。
-
----
-
-# 25. 当前任务看板
-
-## TODO
-
-- [x] 找到老师发的 GitHub Repository：`https://github.com/uzh-rpg/rpg_dvs_ros`
-- [x] 保存 Repository URL
-- [x] 阅读 README
-- [x] 确认 Ubuntu / ROS 版本：Ubuntu 20.04 + ROS Noetic
-- [ ] DAVIS346 接入电脑
-- [ ] Host `lsusb`
-- [ ] 建立 Ubuntu20 Docker
-- [ ] Docker 内安装 ROS
-- [ ] Docker USB passthrough
-- [ ] Docker `lsusb`
-- [ ] Clone Repository
-- [ ] 安装依赖
-- [ ] 编译 Workspace
-- [ ] 启动 Driver
-- [ ] `rostopic list`
-- [ ] 检查 Event Topic
-- [ ] 检查 Event Rate
-- [ ] 录制测试数据
-- [ ] 保存 Docker 环境
-- [ ] 编写 Setup Notes
-
----
-
-## 当前状态
-
-```text
-项目阶段：
-Hardware / Software Bring-up
-
-当前设备：
-DAVIS346 × 2
-
-当前主要设备：
-DAVIS346 #1
-
-当前主要任务：
-Docker + ROS + DAVIS Driver
-
-当前目标：
-获得稳定 Event Stream
-```
-
----
-
-# 26. 最终总结
-
-你的毕业论文不是一个单纯的：
-
-> “DAVIS346 使用教程。”
-
-DAVIS346 只是当前的第一块实验硬件。
-
-真正的论文主线是：
-
-```text
-多个 Event Camera
-        |
-        v
-统一算法
-        |
-        v
-统一测试
-        |
-        v
-性能对比
-        |
-        v
-分析硬件差异
-```
-
-后期再考虑：
-
-```text
-新型 Event Camera
-        |
-        v
-自行采集
-        |
-        v
-Dataset
-        |
-        v
-更完整的实验
-        |
-        v
-潜在发表
-```
-
-而你现在需要做的事情非常具体：
-
-> **先把一台 DAVIS346 在 Ubuntu 20.04 Docker + ROS 环境中稳定跑通。**
-
-这是当前最重要的里程碑。
+正式实验数据、标定文件和大型 rosbag 不提交到 GitHub。GitHub 只保存代码、配置模板、文档和可复现实验入口。

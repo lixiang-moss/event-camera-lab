@@ -1,0 +1,32 @@
+<launch>
+  <arg name="namespace" default="dvs" />
+  <arg name="camera_serial" default="" />
+  <arg name="camera_name" default="" />
+  <arg name="frame_id" default="event_camera_optical_frame" />
+  <arg name="camera_info_url" default="" />
+  <arg name="bias_file" default="" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="display_method" default="red-blue" />
+  <arg name="rendering_topic" default="/dvs_rendering" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/prophesee_evk1_vga_live_stream.launch">
+    <arg name="namespace" value="$(arg namespace)" />
+    <arg name="camera_serial" value="$(arg camera_serial)" />
+    <arg name="camera_name" value="$(arg camera_name)" />
+    <arg name="frame_id" value="$(arg frame_id)" />
+    <arg name="camera_info_url" value="$(arg camera_info_url)" />
+    <arg name="bias_file" value="$(arg bias_file)" />
+    <arg name="event_delta_t" value="$(arg event_delta_t)" />
+  </include>
+
+  <node name="dvs_renderer" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+    <param name="display_method" value="$(arg display_method)" />
+    <remap from="events" to="/$(arg namespace)/events" />
+    <remap from="camera_info" to="/$(arg namespace)/camera_info" />
+    <remap from="dvs_rendering" to="$(arg rendering_topic)" />
+  </node>
+  <node name="image_view" pkg="rqt_image_view" type="rqt_image_view"
+        args="$(arg rendering_topic)" output="screen">
+    <remap from="image" to="$(arg rendering_topic)" />
+  </node>
+</launch>

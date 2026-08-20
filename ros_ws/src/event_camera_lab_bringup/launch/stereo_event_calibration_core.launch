@@ -1,0 +1,60 @@
+<launch>
+  <arg name="cam0_namespace" default="cam0" />
+  <arg name="cam1_namespace" default="cam1" />
+  <arg name="dots_w" default="5" />
+  <arg name="dots_h" default="5" />
+  <arg name="dot_distance" default="0.05" />
+  <arg name="blinking_time_us" default="1000" />
+  <arg name="blinking_time_tolerance_us" default="500" />
+  <arg name="enough_transitions_threshold" default="100" />
+  <arg name="minimum_transitions_threshold" default="30" />
+
+  <node name="dvs_renderer_cam0" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+    <param name="display_method" value="grayscale" />
+    <remap from="events" to="/$(arg cam0_namespace)/events" />
+    <remap from="camera_info" to="/$(arg cam0_namespace)/camera_info" />
+    <remap from="dvs_rendering" to="/$(arg cam0_namespace)/dvs_rendering" />
+  </node>
+  <node name="dvs_renderer_cam1" pkg="dvs_renderer" type="dvs_renderer" output="screen">
+    <param name="display_method" value="grayscale" />
+    <remap from="events" to="/$(arg cam1_namespace)/events" />
+    <remap from="camera_info" to="/$(arg cam1_namespace)/camera_info" />
+    <remap from="dvs_rendering" to="/$(arg cam1_namespace)/dvs_rendering" />
+  </node>
+
+  <node pkg="event_camera_prophesee_tools" type="camera_info_gate"
+        name="camera_info_gate_cam0" output="screen">
+    <remap from="input" to="/$(arg cam0_namespace)/camera_info" />
+    <remap from="output" to="/$(arg cam0_namespace)/calibration_camera_info" />
+  </node>
+  <node pkg="event_camera_prophesee_tools" type="camera_info_gate"
+        name="camera_info_gate_cam1" output="screen">
+    <remap from="input" to="/$(arg cam1_namespace)/camera_info" />
+    <remap from="output" to="/$(arg cam1_namespace)/calibration_camera_info" />
+  </node>
+
+  <node pkg="dvs_calibration" type="stereo" name="dvs_calibration" output="screen">
+    <remap from="camera_info_left" to="/$(arg cam0_namespace)/calibration_camera_info" />
+    <remap from="events_left" to="/$(arg cam0_namespace)/events" />
+    <remap from="set_camera_info_left" to="/$(arg cam0_namespace)/set_camera_info" />
+    <remap from="camera_info_right" to="/$(arg cam1_namespace)/calibration_camera_info" />
+    <remap from="events_right" to="/$(arg cam1_namespace)/events" />
+    <remap from="set_camera_info_right" to="/$(arg cam1_namespace)/set_camera_info" />
+    <param name="dots_w" value="$(arg dots_w)" />
+    <param name="dots_h" value="$(arg dots_h)" />
+    <param name="dot_distance" value="$(arg dot_distance)" />
+    <param name="blinking_time_us" value="$(arg blinking_time_us)" />
+    <param name="blinking_time_tolerance_us" value="$(arg blinking_time_tolerance_us)" />
+    <param name="enough_transitions_threshold" value="$(arg enough_transitions_threshold)" />
+    <param name="minimum_transitions_threshold" value="$(arg minimum_transitions_threshold)" />
+  </node>
+
+  <node pkg="rqt_image_view" type="rqt_image_view" name="cam0_event_view"
+        args="/$(arg cam0_namespace)/dvs_rendering" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="cam1_event_view"
+        args="/$(arg cam1_namespace)/dvs_rendering" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="cam0_transition_view"
+        args="/dvs_calibration/visualization_left" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="cam1_transition_view"
+        args="/dvs_calibration/visualization_right" output="screen" />
+</launch>

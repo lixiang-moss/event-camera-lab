@@ -1,6 +1,6 @@
 # Validation Notes
 
-Date: 2026-08-12; dual-GUI validation updated 2026-08-14; DVXplorer and calibration/rosbag validation updated 2026-08-16; EVK4-HD validation updated 2026-08-19
+Date: 2026-08-12; dual-GUI validation updated 2026-08-14; DVXplorer and calibration/rosbag validation updated 2026-08-16; EVK4-HD validation updated 2026-08-19; EVK1-VGA validation updated 2026-08-20
 
 Host:
 
@@ -48,7 +48,7 @@ EVK4-HD validated items:
 - `/opt/metavision/share/openeb-build-info.txt` records the verified OpenEB repository commit. `metavision_software_info -c` reports the vendor's internal SDK commit embedded in this release, not the OpenEB repository commit.
 - `metavision_software_info`, `metavision_platform_info`, `metavision_viewer`, `metavision_file_info` and the Prophesee HAL plugin are present in the final image.
 - `prophesee_ros_wrapper` `4.6.2`, commit `8eba7cecd19f31585032188a5daa5908c848e2c4`, builds as ordinary workspace source.
-- OpenEB identifies the connected device as Prophesee IMX636 HD / EVK4-HD, serial `00050673`, `1280x720`, EVT3, over USB 3.0. No firmware incompatibility warning appeared.
+- OpenEB identifies the connected device as Prophesee IMX636 HD / EVK4-HD, serial `00050673`, `system_ID=49`, `1280x720`, EVT3, over USB 3.0. No firmware incompatibility warning appeared.
 - The pure profile publishes `/prophesee/camera/cd_events_buffer` and `/prophesee/camera/camera_info`, without enabling `/dvs/events` or GUI by default.
 - The official ROS Viewer profile launches and subscribes to both native topics. It intentionally produces no `/dvs_rendering` image topic.
 - With the adapter enabled, `/dvs/events` is `dvs_msgs/EventArray`, `/dvs/camera_info` is `sensor_msgs/CameraInfo`, and `/dvs/set_camera_info` is available.
@@ -61,12 +61,31 @@ EVK4-HD validated items:
 - The ROS CameraInfo to OpenCV/Kalibr exporter passed matrix and resolution checks using a temporary structural fixture outside the persistent EVK4 calibration path.
 - The upstream `prophesee_ros_wrapper` and `rpg_dvs_ros` sources were not modified.
 
+EVK1-VGA validated items:
+
+- `event-camera-lab:openeb31-noetic` builds OpenEB `3.1.2` from commit `04022c2f1dac338d4dc6ec85d50fcfafd74f9989` and uses separate `build_openeb31`, `devel_openeb31`, and `logs_openeb31` spaces.
+- OpenEB identifies the connected device as Prophesee Gen 3.0 VGA, serial `00002433`, `system_ID=21`, `640x480`, EVT2, over USB 3.0. The EVK1 profile accepted it; the OpenEB 4.6 service did not expose it as an EVK4 device.
+- The single-camera profile publishes `dvs_msgs/EventArray`, `sensor_msgs/CameraInfo`, and `event_camera_msgs/ExternalTriggerArray`; `/dvs/set_camera_info` is available.
+- The GUI profile starts `dvs_renderer` and rqt; the renderer advertises `/dvs_rendering`, and the rqt process subscribes to it.
+- A project-recorded OpenEB RAW decoded to 272 CD events and 0 trigger events. The low count came from a static scene and is not a throughput result.
+- Strict RAW-to-bag conversion produced 272 RAW events and 272 bag events, with 0 triggers on both sides. `rosbag info` and `rosbag check` succeeded.
+- A short live bag command completed and passed `rosbag info/check`; the static scene produced no new CD events during that interval, so it does not demonstrate sustained live rate.
+- A saved OpenEB bias file loaded successfully through `BIAS_FILE`.
+- The intrinsic calibration profile started the driver, renderer, `dvs_calibration`, three rqt windows, and start/reset/save services. No calibration action was executed and no YAML was generated.
+- EVK1, EVK4, and DVXplorer stereo launch files resolve two drivers, two isolated renderers, and two image-view nodes. EVK1 stereo rejects missing, duplicate, and disconnected serials before launch.
+- EVK1 stereo hardware, master/slave wiring, external pulses, stereo calibration, and synchronization accuracy remain unverified because only one EVK1-VGA was connected.
+- After the independent review fixes, a new 2-second RAW closed through `Camera::stop()`, contained 236 CD events and 0 triggers, and recorded the generated bias sidecar SHA256. Strict conversion produced 236/236 CD events and 0/0 triggers.
+- The calibration CameraInfo gate received the uncalibrated `640x480` message with empty `D` and zero `K`, withheld it from `/dvs/calibration_camera_info`, and left the calibration services running.
+- A live rosbag run read the actual `event_delta_t=0.0001`, `sync_mode=standalone`, and bias SHA256 from the running node. An explicit incorrect `EVENT_DELTA_T=0.001` assertion was rejected before recording.
+- The paired-bag merge utility was tested with interleaved synthetic cam0/cam1 timestamps and with a 1,750-message validation bag whose events and CameraInfo were not globally ordered by header time. Both outputs were monotonic; the real bag retained the same topic counts, duration, and time range, and `rosbag check` passed.
+- Offline RAW profile validation accepts EVK1 `system_ID=21/28` and EVK4 `system_ID=49`; a same-geometry synthetic RAW identity with `system_ID=41` was rejected.
+
 Notes:
 
 - The live driver must run as root inside the privileged container because the USB device node is owned by `root:root` and requires write access.
 - A missing camera calibration file warning appeared for `/root/.ros/camera_info/DAVIS-00000889.yaml`; this does not block event streaming.
 - Some imported upstream ROS packages emit CMake deprecation warnings because they declare old CMake compatibility. The packages still build successfully.
-- The dual profiles intentionally leave `serial_number` empty, so physical camera assignment to `/cam0` and `/cam1` is not stable across reconnects or restarts.
+- DAVIS and DVXplorer dual profiles leave `serial_number` empty by default, so physical assignment is not stable unless both serials are supplied. Prophesee dual profiles require two different serials.
 - No DVXplorer hardware was connected during the 2026-08-16 validation, so its profiles were build- and launch-validated but not live-stream validated.
 - The calibration validation only confirmed dependencies, topics, services, image input, and GUI startup. It did not create or write camera intrinsics.
 - Only one DAVIS346 was connected for the calibration and rosbag validation in this update.

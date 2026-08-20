@@ -1,8 +1,11 @@
 # ROS build outputs
 ros_ws/build/
 ros_ws/devel/
+ros_ws/build_openeb31/
+ros_ws/devel_openeb31/
 ros_ws/install/
 ros_ws/logs/
+ros_ws/logs_openeb31/
 .catkin_tools/
 
 # Local data and recordings
@@ -19,6 +22,17 @@ data/prophesee/manifests/*
 !data/prophesee/raw/.gitkeep
 !data/prophesee/rosbag/.gitkeep
 !data/prophesee/manifests/.gitkeep
+!data/prophesee/evk1_vga/
+data/prophesee/evk1_vga/*
+!data/prophesee/evk1_vga/raw/
+!data/prophesee/evk1_vga/rosbag/
+!data/prophesee/evk1_vga/manifests/
+data/prophesee/evk1_vga/raw/*
+data/prophesee/evk1_vga/rosbag/*
+data/prophesee/evk1_vga/manifests/*
+!data/prophesee/evk1_vga/raw/.gitkeep
+!data/prophesee/evk1_vga/rosbag/.gitkeep
+!data/prophesee/evk1_vga/manifests/.gitkeep
 *.bag
 *.raw
 *.db3

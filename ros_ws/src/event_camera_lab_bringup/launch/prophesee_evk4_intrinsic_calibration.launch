@@ -31,9 +31,15 @@
     <remap from="dvs_rendering" to="/$(arg output_namespace)/dvs_rendering" />
   </node>
 
+  <node pkg="event_camera_prophesee_tools" type="camera_info_gate"
+        name="calibration_camera_info_gate" output="screen">
+    <remap from="input" to="/$(arg output_namespace)/camera_info" />
+    <remap from="output" to="/$(arg output_namespace)/calibration_camera_info" />
+  </node>
+
   <node pkg="dvs_calibration" type="mono" name="dvs_calibration" output="screen">
     <remap from="events" to="/$(arg output_namespace)/events" />
-    <remap from="camera_info" to="/$(arg output_namespace)/camera_info" />
+    <remap from="camera_info" to="/$(arg output_namespace)/calibration_camera_info" />
     <remap from="set_camera_info" to="/$(arg output_namespace)/set_camera_info" />
     <param name="dots_w" value="$(arg dots_w)" />
     <param name="dots_h" value="$(arg dots_h)" />

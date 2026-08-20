@@ -26,6 +26,11 @@ require_safe_prefix "${RAW_PREFIX}"
 device_info="$(rosrun event_camera_prophesee_tools prophesee_device_info)"
 serial="$(printf '%s\n' "${device_info}" | kv_value serial)"
 device_firmware="$(printf '%s\n' "${device_info}" | kv_value firmware)"
+system_id="$(printf '%s\n' "${device_info}" | kv_value system_id)"
+if [ "${system_id}" != "49" ]; then
+  echo "Detected Prophesee system_ID=${system_id}; EVK4 Viewer recording expects 49." >&2
+  exit 1
+fi
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 base="${RAW_PREFIX}_${serial}_${stamp}"
 raw_file="/workspace/data/prophesee/raw/${base}.raw"
@@ -53,12 +58,14 @@ fi
 
 raw_info="$(rosrun event_camera_prophesee_tools prophesee_raw_info "${raw_file}")"
 event_count="$(printf '%s\n' "${raw_info}" | kv_value cd_event_count)"
+trigger_count="$(printf '%s\n' "${raw_info}" | kv_value trigger_event_count)"
 width="$(printf '%s\n' "${raw_info}" | kv_value width)"
 height="$(printf '%s\n' "${raw_info}" | kv_value height)"
 encoding="$(printf '%s\n' "${raw_info}" | kv_value encoding)"
 firmware="$(printf '%s\n' "${raw_info}" | kv_value firmware)"
 firmware="${firmware:-${device_firmware}}"
 raw_sha="$(sha256sum "${raw_file}" | awk '{print $1}')"
+bias_sidecar="${raw_file%.raw}.bias"
 saved_settings_sha="none"
 if [ -s "${saved_settings}" ]; then
   saved_settings_sha="$(sha256sum "${saved_settings}" | awk '{print $1}')"
@@ -70,11 +77,15 @@ python3 /workspace/scripts/lib/write_recording_manifest.py \
   --field "data_file=${raw_file}" \
   --field "sha256=${raw_sha}" \
   --field "serial=${serial}" \
+  --field "system_id=${system_id}" \
   --field "width=${width}" \
   --field "height=${height}" \
   --field "encoding=${encoding}" \
   --field "firmware=${firmware}" \
   --field "event_count=${event_count}" \
+  --field "trigger_count=${trigger_count}" \
+  --field "bias_file=${bias_sidecar}" \
+  --field "bias_sha256=$(file_sha_or_none "${bias_sidecar}")" \
   --field "input_camera_settings=${CAMERA_SETTINGS:-none}" \
   --field "input_camera_settings_sha256=${input_settings_sha}" \
   --field "saved_camera_settings=${saved_settings}" \

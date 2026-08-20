@@ -1,0 +1,10 @@
+<launch>
+  <arg name="cam0_serial" default="" />
+  <arg name="cam1_serial" default="" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/dvxplorer_dual_live_stream.launch">
+    <arg name="cam0_serial" value="$(arg cam0_serial)" />
+    <arg name="cam1_serial" value="$(arg cam1_serial)" />
+  </include>
+  <include file="$(find event_camera_lab_bringup)/launch/stereo_event_calibration_core.launch" />
+</launch>

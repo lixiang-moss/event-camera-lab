@@ -7,9 +7,10 @@ source_ros_environment() {
     source "/opt/ros/${ROS_DISTRO:-noetic}/setup.bash"
   fi
 
-  if [ -f "${ROS_WS:-/workspace/ros_ws}/devel/setup.bash" ]; then
+  local devel_space="${ROS_DEVEL_SPACE:-${ROS_WS:-/workspace/ros_ws}/devel}"
+  if [ -f "${devel_space}/setup.bash" ]; then
     # shellcheck source=/dev/null
-    source "${ROS_WS:-/workspace/ros_ws}/devel/setup.bash"
+    source "${devel_space}/setup.bash"
   fi
 }
 

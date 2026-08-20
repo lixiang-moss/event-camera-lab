@@ -1,0 +1,39 @@
+<launch>
+  <arg name="camera_serial" default="" />
+  <arg name="bias_file" default="" />
+  <arg name="event_delta_t" default="0.001" />
+  <arg name="dots_w" default="5" />
+  <arg name="dots_h" default="5" />
+  <arg name="dot_distance" default="0.05" />
+
+  <include file="$(find event_camera_lab_bringup)/launch/prophesee_evk1_vga_live_stream.launch">
+    <arg name="camera_serial" value="$(arg camera_serial)" />
+    <arg name="bias_file" value="$(arg bias_file)" />
+    <arg name="event_delta_t" value="$(arg event_delta_t)" />
+  </include>
+  <node pkg="dvs_renderer" type="dvs_renderer" name="calibration_renderer" output="screen">
+    <param name="display_method" value="grayscale" />
+    <remap from="events" to="/dvs/events" />
+    <remap from="camera_info" to="/dvs/camera_info" />
+    <remap from="dvs_rendering" to="/dvs/dvs_rendering" />
+  </node>
+  <node pkg="event_camera_prophesee_tools" type="camera_info_gate"
+        name="calibration_camera_info_gate" output="screen">
+    <remap from="input" to="/dvs/camera_info" />
+    <remap from="output" to="/dvs/calibration_camera_info" />
+  </node>
+  <node pkg="dvs_calibration" type="mono" name="dvs_calibration" output="screen">
+    <remap from="events" to="/dvs/events" />
+    <remap from="camera_info" to="/dvs/calibration_camera_info" />
+    <remap from="set_camera_info" to="/dvs/set_camera_info" />
+    <param name="dots_w" value="$(arg dots_w)" />
+    <param name="dots_h" value="$(arg dots_h)" />
+    <param name="dot_distance" value="$(arg dot_distance)" />
+  </node>
+  <node pkg="rqt_image_view" type="rqt_image_view" name="event_rendering_view"
+        args="/dvs/dvs_rendering" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="transition_map_view"
+        args="/dvs_calibration/visualization" output="screen" />
+  <node pkg="rqt_image_view" type="rqt_image_view" name="detected_pattern_view"
+        args="/dvs_calibration/pattern" output="screen" />
+</launch>

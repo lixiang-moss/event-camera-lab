@@ -17,6 +17,9 @@ require_safe_prefix() {
 
 to_container_path() {
   local value="$1"
+  if [[ "${value}" != /* ]]; then
+    value="$(realpath -m "${PROJECT_ROOT}/${value}")"
+  fi
   case "${value}" in
     /workspace/*)
       printf '%s\n' "${value}"
@@ -59,5 +62,37 @@ calibration_sha() {
     sha256sum "${calibration}" | awk '{print $1}'
   else
     printf 'none\n'
+  fi
+}
+
+file_sha_or_none() {
+  local path="${1:-}"
+  if [ -n "${path}" ] && [ -f "${path}" ]; then
+    sha256sum "${path}" | awk '{print $1}'
+  else
+    printf 'none\n'
+  fi
+}
+
+validate_raw_profile() {
+  local info="$1"
+  local expected_width="$2"
+  local expected_height="$3"
+  local expected_generation_major="$4"
+  local expected_system_ids="$5"
+  local width height generation_major system_id system_id_allowed=false
+  width="$(printf '%s\n' "${info}" | kv_value width)"
+  height="$(printf '%s\n' "${info}" | kv_value height)"
+  generation_major="$(printf '%s\n' "${info}" | kv_value generation_major)"
+  system_id="$(printf '%s\n' "${info}" | kv_value system_id)"
+  case ",${expected_system_ids}," in
+    *,"${system_id}",*) system_id_allowed=true ;;
+  esac
+  if [ "${width}" != "${expected_width}" ] ||
+     [ "${height}" != "${expected_height}" ] ||
+     [ "${generation_major}" != "${expected_generation_major}" ] ||
+     [ "${system_id_allowed}" != "true" ]; then
+    echo "RAW geometry ${width}x${height}, generation ${generation_major}, system_ID ${system_id} does not match the selected profile (${expected_system_ids})." >&2
+    return 1
   fi
 }

@@ -1,14 +1,16 @@
 # event-camera-lab
 
-`event-camera-lab` is a Docker + ROS workspace for event camera bring-up and future multi-camera experiments.
+`event-camera-lab` is a Docker + ROS workspace for repeatable single- and
+stereo-camera experiments across multiple event-camera models.
 
-The current first milestone is to run a live event stream from the available camera through:
+The common runtime path is:
 
 ```text
 Host Ubuntu -> Docker Ubuntu 20.04 -> ROS Noetic -> event camera driver -> ROS topics
 ```
 
-The project name and folder structure are intentionally camera-model neutral. The current DAVIS driver is only the first validation profile.
+The project name and top-level structure are camera-model neutral. Supported
+profiles are summarized in [docs/CAMERA_SUPPORT_MATRIX.md](docs/CAMERA_SUPPORT_MATRIX.md).
 
 ## Quick Start
 
@@ -91,6 +93,21 @@ DURATION=60 ./scripts/record_prophesee_rosbag.sh
 See the EVK4 guide before collecting experiment data; RAW is the original
 archive and rosbag is the derived ROS format.
 
+For an EVK1-VGA, use the isolated OpenEB 3.1 environment. The scripts select
+the correct image and catkin space from `CAMERA_PROFILE`:
+
+```bash
+CAMERA_PROFILE=prophesee_evk1_vga ./scripts/build_image.sh
+CAMERA_PROFILE=prophesee_evk1_vga ./scripts/build_workspace.sh
+CAMERA_PROFILE=prophesee_evk1_vga ./scripts/launch_live_stream.sh
+CAMERA_PROFILE=prophesee_evk1_vga_with_renderer ./scripts/launch_live_stream.sh
+```
+
+EVK1/EVK4 stereo profiles require two distinct serials. DAVIS/DVXplorer
+stereo profiles keep serials optional, with `REQUIRE_SERIALS=true` available
+for fixed left/right identity. See each camera guide before collecting thesis
+data.
+
 This uses `roslaunch`, so it starts a ROS master automatically when one is not already running.
 
 In another terminal, inspect topics:
@@ -99,15 +116,15 @@ In another terminal, inspect topics:
 ./scripts/check_topics.sh
 ```
 
-For either two-camera profile, check `/cam0/events` and `/cam1/events`
-separately. Camera-to-namespace assignment is not stable because these profiles
-intentionally do not bind devices by serial number.
+For any two-camera profile, check `/cam0/events` and `/cam1/events` separately.
 
 ## Documentation
 
 - Full Chinese user manual: [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
 - DAVIS calibration and rosbag guide: [docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md](docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md)
 - Prophesee EVK4-HD guide: [docs/PROPHESEE_EVK4_GUIDE.md](docs/PROPHESEE_EVK4_GUIDE.md)
+- Prophesee EVK1-VGA guide: [docs/PROPHESEE_EVK1_VGA_GUIDE.md](docs/PROPHESEE_EVK1_VGA_GUIDE.md)
+- Camera support matrix: [docs/CAMERA_SUPPORT_MATRIX.md](docs/CAMERA_SUPPORT_MATRIX.md)
 - Upstream source record: [docs/SOURCES.md](docs/SOURCES.md)
 - Current validation notes: [docs/VALIDATION.md](docs/VALIDATION.md)
 - Thesis project plan: [event_camera_thesis_project_plan.md](event_camera_thesis_project_plan.md)

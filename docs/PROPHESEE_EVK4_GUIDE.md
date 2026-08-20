@@ -12,7 +12,7 @@
 - RAW 离线回放、转换和完整性检查
 - LED 点阵内参标定入口与多格式导出
 
-当前只支持一台实时 EVK4。代码预留了 namespace、camera name、frame id 和 CameraInfo URL，但没有实现双 EVK4 选择、硬件同步或跨设备时间同步。
+当前提供 EVK4 单目和双目 profile，并校验 IMX636 `system_ID=49`。单目保留官方 wrapper 的原生 topic；双目使用项目自有统一 `dvs_msgs` 驱动，并以 serial 固定 `/cam0`、`/cam1`。双目真机画面、同步线和同步精度尚未验证。
 
 ## 2. 固定版本与兼容边界
 
@@ -180,6 +180,22 @@ event_delta_t=0.001
 camera_info_url=file:///workspace/config/camera_info/prophesee_<serial>.yaml
 ```
 
+### 5.4 双目 profile
+
+双目必须提供两个不同 serial：
+
+```bash
+CAM0_SERIAL=00000001 CAM1_SERIAL=00000002 \
+CAMERA_PROFILE=prophesee_evk4_dual \
+  ./scripts/launch_live_stream.sh
+
+CAM0_SERIAL=00000001 CAM1_SERIAL=00000002 \
+CAMERA_PROFILE=prophesee_evk4_dual_with_renderer \
+  ./scripts/launch_live_stream.sh
+```
+
+双目直接发布 `/cam0/events`、`/cam1/events` 及各自的 CameraInfo、Trigger；GUI 输出 `/cam0/dvs_rendering` 和 `/cam1/dvs_rendering`。默认 `SYNC_MODE=standalone`。只有接好同步线后才可设置 `SYNC_MODE=master_slave`，此时 cam1 为 slave、cam0 为 master。未完成双机实测前，不能声明两路已达到确定的同步精度。
+
 ## 6. 事件聚合窗口
 
 本工程默认 `event_delta_t=0.001` 秒，即 1 ms。官方 wrapper 默认值是 100 us。
@@ -208,6 +224,8 @@ EVK4 数据采用两层管理：
 - OpenEB RAW 是原始主档，保留设备 header 与 EVT3 编码流。
 - ROS rosbag 是派生实验格式，用于 ROS 算法、统一 topic 和可视化。
 
+EVK4 RAW 回放和转换校验 IMX636 `system_ID=49`，型号不匹配时拒绝继续。
+
 目录：
 
 ```text
@@ -228,7 +246,7 @@ DURATION=60 RAW_PREFIX=experiment01 ./scripts/record_prophesee_raw.sh
 
 `DURATION=0` 表示持续录制，按 `Ctrl+C` 正常结束。项目 C++ 工具调用 OpenEB `Camera::start_recording()` / `stop_recording()`，退出前关闭 RAW。
 
-CLI recorder 使用 OpenEB 默认相机设置，并把 `camera_settings_policy=openeb_defaults` 写入 manifest。若实验需要固定 bias、ROI 或 ERC，请使用经过版本管理的设置文件和 Viewer 流程，或后续扩展 CLI recorder 的设置输入；不能只凭口头记录参数。
+CLI recorder 默认使用 OpenEB 相机设置，manifest 记录 `camera_settings_policy=openeb_defaults`；传入 bias 文件时记录 `openeb_defaults_with_bias_override` 及输入文件哈希。若实验需要固定 ROI 或 ERC，须扩展 CLI recorder 并把设置写入 manifest，不能只凭口头记录参数。
 
 生成：
 
@@ -260,7 +278,7 @@ CAMERA_SETTINGS=/home/lx/ec_xiangli/config/prophesee/experiment01.json \
 RAW_PREFIX=viewer01 ./scripts/record_prophesee_raw_with_viewer.sh
 ```
 
-在 Viewer 中按空格开始录制，再按空格停止。若在 GUI 中调整了 bias、ROI 或 ERC，退出前按 `s` 保存实际设置，再按 `q` 退出。脚本记录输入设置和实际保存设置的路径与 SHA256；若 `saved_camera_settings_sha256` 为 `none`，不能声称 GUI 调整后的参数已被完整归档。只有实际生成非空 RAW 后脚本才写 manifest。
+在 Viewer 中按空格开始录制，再按空格停止。若在 GUI 中调整了 bias、ROI 或 ERC，退出前按 `s` 保存实际设置，再按 `q` 退出。脚本记录输入/保存设置、RAW bias sidecar 的路径与 SHA256，以及 CD event/trigger 数；若 `saved_camera_settings_sha256` 为 `none`，不能声称 GUI 调整后的参数已被完整归档。只有实际生成非空 RAW 后脚本才写 manifest。
 
 官方参考：
 
@@ -269,6 +287,16 @@ RAW_PREFIX=viewer01 ./scripts/record_prophesee_raw_with_viewer.sh
 - [RAW File Format](https://docs.prophesee.ai/stable/data/file_formats/raw.html)
 
 `stable` 页面可能对应比 4.6.2 更新的 SDK；具体命令行为以本工程锁定的 OpenEB 4.6.2 二进制和本手册实测为准。
+
+### 8.3 双目 RAW
+
+```bash
+CAMERA_PROFILE=prophesee_evk4_dual \
+CAM0_SERIAL=00000001 CAM1_SERIAL=00000002 \
+DURATION=60 ./scripts/record_prophesee_raw.sh
+```
+
+命令生成两份 RAW 和一个 pair manifest。成对回放与转换使用 `replay_prophesee_raw_pair.sh` 和 `convert_prophesee_raw_pair_to_rosbag.sh`；两路采用同一 ROS epoch，并保留源 RAW 时间戳之间的偏移。转换分别录制临时 bag，再按首事件或 header 时间戳归并最终 bag。`strict` 分别检查两路 CD event 和 trigger 数量。
 
 ## 9. 实时 rosbag
 
@@ -296,9 +324,9 @@ DURATION=60 BAG_PREFIX=experiment01 \
 
 原生 `/prophesee/camera/cd_events_buffer` 不重复写入 bag。RAW 才是原始主档；实时 bag 不能代替同一实验的 RAW 归档。
 
-脚本自动执行 `rosbag info` 和 `rosbag check`，并记录事件数、消息数、分辨率、时间区间、serial、版本、参数、标定 SHA256 和 bag SHA256。
+脚本自动执行 `rosbag info` 和 `rosbag check`，并记录事件数、消息数、分辨率、时间区间、serial、版本、参数、bias/标定 SHA256 和 bag SHA256。
 
-`event_delta_t_s` 直接读取正在运行的 `/event_camera_driver/event_delta_t`。可用 `EVENT_DELTA_T=0.001` 作为断言；如果断言值与 driver 实际参数不一致，录包会拒绝开始，而不会把猜测值写进 manifest。
+`event_delta_t_s`、同步角色和 bias 路径直接读取正在运行的节点。可用 `EVENT_DELTA_T=0.001` 或 `SYNC_MODE=master_slave` 作为断言；如果断言值与 driver 实际参数不一致，录包会拒绝开始，而不会把猜测值写进 manifest。
 
 ## 10. RAW 离线回放
 
@@ -401,6 +429,8 @@ rqt_image_view /dvs_rendering
 ## 13. EVK4 内参标定
 
 EVK4 没有 DAVIS APS 灰度帧，因此不使用 DAVIS 棋盘格流程。本工程复用开源 `dvs_calibration` C++ 核心，以闪烁 LED 点阵从事件流检测几何点。
+
+单目标定入口会过滤无有效 `K/D` 的 CameraInfo，避免上游 pose 计算读取空参数；这不妨碍从未标定状态采样。双目标定必须先加载左右相机各自的有效单目内参。
 
 默认标定板接口：
 
@@ -509,7 +539,7 @@ config/calibration/prophesee/<serial>/manifest.yaml
 
 ### profile 报多台相机
 
-单机 profile 按不同硬件 serial 计数。拔掉额外 EVK，或等待未来实现明确的多机选择 profile。OpenEB 4.6.2 有时会重复返回同一个 HAL source；项目工具会对完全相同的 source 去重。
+单机 profile 按不同硬件 serial 计数。只使用一台时拔掉额外 EVK；使用两台时改用 `prophesee_evk4_dual*` profile 并提供两个 serial。OpenEB 4.6.2 有时会重复返回同一个 HAL source；项目工具会对完全相同的 source 去重。
 
 ### 原生 topic 有数据但没有 `/dvs/events`
 
@@ -544,5 +574,6 @@ CAMERA_PROFILE=prophesee_evk4 ./scripts/launch_live_stream.sh
 - 2.010 秒 RAW strict 转 bag：1,502,781 对 1,502,781，差异 0。
 - 实时 rosbag、`rosbag info/check/play --clock --pause` 和 `dvs_renderer` 均通过。
 - 标定节点、检查窗口、服务、serial 路径和临时格式导出通过；未生成 EVK4 内参。
+- 双目 launch、namespace、serial 校验和成对 RAW 时间轴逻辑已检查；双目真机与同步精度待验证。
 
 永久宿主 udev 规则仍需要在交互式终端执行一次带密码的安装脚本，并在重新插拔后复查。

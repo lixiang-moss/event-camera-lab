@@ -12,10 +12,11 @@
 #include <metavision/sdk/base/events/event_cd.h>
 #include <metavision/sdk/driver/camera.h>
 #include <metavision/sdk/driver/camera_exception.h>
-#include <metavision/sdk/driver/file_config_hints.h>
 #include <prophesee_event_msgs/EventArray.h>
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
+
+#include "event_camera_prophesee_tools/openeb_compat.h"
 
 namespace {
 
@@ -48,12 +49,11 @@ class RawPublisher {
     camera_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
         topic_prefix + "/camera_info", 10, true);
 
-    auto hints = Metavision::FileConfigHints().real_time_playback(true);
-    camera_ = Metavision::Camera::from_file(raw_file_, hints);
+    camera_ = event_camera_prophesee_tools::openRawFile(raw_file_, true, true);
     const auto config = camera_.get_camera_configuration();
     width_ = camera_.geometry().width();
     height_ = camera_.geometry().height();
-    serial_ = config.serial_number;
+    serial_ = event_camera_prophesee_tools::cameraSerial(&camera_);
 
     camera_.cd().add_callback(
         [this](const Metavision::EventCD *begin, const Metavision::EventCD *end) {
