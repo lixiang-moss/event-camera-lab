@@ -1,0 +1,24 @@
+name: event-camera-lab-nrv
+
+services:
+  event-camera-nrv-viewer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nrv-viewer
+    image: event-camera-lab:nrv-viewer-jammy
+    privileged: true
+    stdin_open: true
+    tty: true
+    environment:
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: "1"
+      LD_LIBRARY_PATH: /opt/nrv/dvs_viewer
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./data/nrv_delta/raw:/opt/nrv/dvs_viewer/RawDataSave
+      - ./data/nrv_delta/hdf5:/data/hdf5
+      - ./data/nrv_delta/media:/opt/nrv/dvs_viewer/MatSave
+      - ./data/nrv_delta/calibration:/opt/nrv/dvs_viewer/calibration/data
+    working_dir: /opt/nrv/dvs_viewer
+    command: ["./DVS_Viewer"]

@@ -10,7 +10,7 @@ Host Ubuntu -> Docker Ubuntu 20.04 -> ROS Noetic -> event camera driver -> ROS t
 ```
 
 The project name and top-level structure are camera-model neutral. Supported
-profiles are summarized in [docs/CAMERA_SUPPORT_MATRIX.md](docs/CAMERA_SUPPORT_MATRIX.md).
+profiles are summarized in [docs/相机支持矩阵.md](docs/相机支持矩阵.md).
 
 ## Quick Start
 
@@ -118,15 +118,38 @@ In another terminal, inspect topics:
 
 For any two-camera profile, check `/cam0/events` and `/cam1/events` separately.
 
+## NRV DELTA10 Viewer
+
+NRV DELTA10 uses a separate Ubuntu 22.04 container with the official DVS
+Viewer. It does not install ROS and does not alter the Ubuntu 20.04 + Noetic
+camera runtime.
+
+Prepare the pinned upstream Viewer locally, then build and launch it:
+
+```bash
+mkdir -p third_party/nrv
+git clone https://github.com/nrvcorp/DVS_Viewer.git third_party/nrv/DVS_Viewer
+git -C third_party/nrv/DVS_Viewer checkout 460512cec02255a627a3baa2737d9a496345d8fc
+./scripts/build_nrv_viewer_image.sh
+./scripts/check_nrv_usb.sh
+./scripts/launch_nrv_viewer.sh
+```
+
+The current NRV stage covers the official GUI, `.dvs` recording/playback,
+HDF5 export, and the official calibration mode. ROS and rosbag conversion are
+gated on obtaining the developer SDK with headers.
+
 ## Documentation
 
-- Full Chinese user manual: [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
-- DAVIS calibration and rosbag guide: [docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md](docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md)
-- Prophesee EVK4-HD guide: [docs/PROPHESEE_EVK4_GUIDE.md](docs/PROPHESEE_EVK4_GUIDE.md)
-- Prophesee EVK1-VGA guide: [docs/PROPHESEE_EVK1_VGA_GUIDE.md](docs/PROPHESEE_EVK1_VGA_GUIDE.md)
-- Camera support matrix: [docs/CAMERA_SUPPORT_MATRIX.md](docs/CAMERA_SUPPORT_MATRIX.md)
-- Upstream source record: [docs/SOURCES.md](docs/SOURCES.md)
-- Current validation notes: [docs/VALIDATION.md](docs/VALIDATION.md)
+- Full Chinese user manual: [docs/项目使用手册.md](docs/项目使用手册.md)
+- DAVIS calibration and rosbag guide: [docs/DAVIS相机标定与ROSBag指南.md](docs/DAVIS相机标定与ROSBag指南.md)
+- Prophesee EVK4-HD guide: [docs/EVK4-HD相机使用指南.md](docs/EVK4-HD相机使用指南.md)
+- Prophesee EVK1-VGA guide: [docs/EVK1-VGA相机使用指南.md](docs/EVK1-VGA相机使用指南.md)
+- NRV DELTA10 Viewer guide: [docs/NRV_DELTA_GUIDE.md](docs/NRV_DELTA_GUIDE.md)
+- NRV DELTA10 SDK/ROS roadmap: [docs/NRV_DELTA_ROADMAP.md](docs/NRV_DELTA_ROADMAP.md)
+- Camera support matrix: [docs/相机支持矩阵.md](docs/相机支持矩阵.md)
+- Upstream source record: [docs/第三方源码记录.md](docs/第三方源码记录.md)
+- Current validation notes: [docs/环境验证记录.md](docs/环境验证记录.md)
 - Thesis project plan: [event_camera_thesis_project_plan.md](event_camera_thesis_project_plan.md)
 
 ## Source Notice
@@ -143,4 +166,8 @@ This repository includes source code from:
 The Docker image builds OpenEB from the pinned upstream source during image
 construction; OpenEB is not vendored into this repository.
 
-They are included as ordinary source folders for this thesis engineering workspace. See [docs/SOURCES.md](docs/SOURCES.md) and the upstream license files for details.
+The NRV Viewer is supplied through an ignored local checkout and is not
+redistributed by this repository. See the NRV guide and source record for its
+fixed upstream commit and current license boundary.
+
+They are included as ordinary source folders for this thesis engineering workspace. See [docs/第三方源码记录.md](docs/第三方源码记录.md) and the upstream license files for details.

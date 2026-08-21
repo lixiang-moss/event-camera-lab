@@ -1,0 +1,142 @@
+lx@moss:~$ sudo lsusb 
+[sudo: authenticate] 密码：  
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 002 Device 005: ID 0bda:0411 Realtek Semiconductor Corp. Hub
+Bus 002 Device 006: ID 0bda:8153 Realtek Semiconductor Corp. RTL8153 Gigabit Ethernet Adapter
+Bus 002 Device 007: ID 0bda:0411 Realtek Semiconductor Corp. Hub
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 003: ID 3277:0004 Sonix Technology Co., Ltd. Integrated Webcam_FHD
+Bus 003 Device 004: ID 8087:0033 Intel Corp. AX211 Bluetooth
+Bus 003 Device 006: ID 046d:c52f Logitech, Inc. Nano Receiver
+Bus 003 Device 010: ID 0bda:5411 Realtek Semiconductor Corp. RTS5411 Hub
+Bus 003 Device 011: ID 0bda:5411 Realtek Semiconductor Corp. RTS5411 Hub
+Bus 003 Device 012: ID 0bda:1100 Realtek Semiconductor Corp. HID Device
+Bus 003 Device 014: ID 04b4:00f4 Cypress Semiconductor Corp. CCAM32Application v1.0.5
+Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+lx@moss:~$ sudo lsusb -v -d 04b4:00f4
+
+Bus 003 Device 014: ID 04b4:00f4 Cypress Semiconductor Corp. CCAM32Application v1.0.5
+Negotiated speed: High Speed (480Mbps)
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.10
+  bDeviceClass            0 [unknown]
+  bDeviceSubClass         0 [unknown]
+  bDeviceProtocol         0 
+  bMaxPacketSize0        64
+  idVendor           0x04b4 Cypress Semiconductor Corp.
+  idProduct          0x00f4 CCAM32Application v1.0.5
+  bcdDevice            0.00
+  iManufacturer           1 CHRONOCAM
+  iProduct                2 CCAM32Application v1.0.5
+  iSerial                 0 
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength       0x0020
+    bNumInterfaces          1
+    bConfigurationValue     1
+    iConfiguration          0 
+    bmAttributes         0x80
+      (Bus Powered)
+    MaxPower              400mA
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           2
+      bInterfaceClass       255 Vendor Specific Class
+      bInterfaceSubClass      0 [unknown]
+      bInterfaceProtocol      0 
+      iInterface              0 
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            2
+          Transfer Type            Bulk
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0200  1x 512 bytes
+        bInterval               0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0080  1x 128 bytes
+        bInterval               1
+Binary Object Store Descriptor:
+  bLength                 5
+  bDescriptorType        15
+  wTotalLength       0x0016
+  bNumDeviceCaps          2
+  USB 2.0 Extension Device Capability:
+    bLength                 7
+    bDescriptorType        16
+    bDevCapabilityType      2
+    bmAttributes   0x00000002
+      HIRD Link Power Management (LPM) Supported
+  SuperSpeed USB Device Capability:
+    bLength                10
+    bDescriptorType        16
+    bDevCapabilityType      3
+    bmAttributes         0x00
+    wSpeedsSupported   0x000e
+      Device can operate at Full Speed (12Mbps)
+      Device can operate at High Speed (480Mbps)
+      Device can operate at SuperSpeed (5Gbps)
+    bFunctionalitySupport   3
+      Lowest fully-functional device speed is SuperSpeed (5Gbps)
+    bU1DevExitLat           0 micro seconds
+    bU2DevExitLat           0 micro seconds
+Device Status:     0x0000
+  (Bus Powered)
+lx@moss:~$ 
+
+
+
+
+
+
+
+
+
+
+新相机Prophesee EVK4 HD的驱动/SDK都是不开源的。需要账号才能获得。然后那个未知型号的相机应该是EVK1-VGA 或者 EVK1-HD
+
+
+需要一个什么样的系统？ 主要是能录书局就可以，说明自己的理解
+多相机采集吗？
+IMU是否要考虑？
+
+电脑USB接口可能不够用
+
+docker对性能影响的详细论述
+
+貌似硬件兼容最好
+
+
+报告问题：p家相机的手册全部需要账号，包括官方
+
+搞清软件工程实际做了什么
+
+
+
+今日任务：
+1.阅读同步方案手册
+
+2.读懂新版代码并进行验证 （新领的相机）
+
+3.添加新代码(缺乏sdk授权，仅增加了原版软件的容器)
+
+4.同步，数据采集论文（重点，采集数据及具体都是什么任务？需要什么样的同步程度？ 单/双目，是否需要并行？是否要并行录制，是否接受分散后端
+
+5.学习事件相机的标定知识，视频课程的重点知识

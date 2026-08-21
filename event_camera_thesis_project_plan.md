@@ -23,11 +23,11 @@ event-camera-lab 已具备 DAVIS、DVXplorer、EVK4-HD 和 EVK1-VGA 的单目与
 
 环境使用与验证细节参见：
 
-- [项目使用手册](docs/USER_MANUAL.md)
-- [DAVIS 标定与 rosbag 指南](docs/DAVIS_CALIBRATION_AND_ROSBAG_GUIDE.md)
-- [环境验证记录](docs/VALIDATION.md)
-- [第三方源码记录](docs/SOURCES.md)
-- [相机支持矩阵](docs/CAMERA_SUPPORT_MATRIX.md)
+- [项目使用手册](docs/项目使用手册.md)
+- [DAVIS 标定与 rosbag 指南](docs/DAVIS相机标定与ROSBag指南.md)
+- [环境验证记录](docs/环境验证记录.md)
+- [第三方源码记录](docs/第三方源码记录.md)
+- [相机支持矩阵](docs/相机支持矩阵.md)
 
 ## 3. 后续总体路线
 

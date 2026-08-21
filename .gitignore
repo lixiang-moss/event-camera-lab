@@ -33,10 +33,30 @@ data/prophesee/evk1_vga/manifests/*
 !data/prophesee/evk1_vga/raw/.gitkeep
 !data/prophesee/evk1_vga/rosbag/.gitkeep
 !data/prophesee/evk1_vga/manifests/.gitkeep
+!data/nrv_delta/
+data/nrv_delta/*
+!data/nrv_delta/raw/
+!data/nrv_delta/hdf5/
+!data/nrv_delta/media/
+!data/nrv_delta/calibration/
+data/nrv_delta/raw/*
+data/nrv_delta/hdf5/*
+data/nrv_delta/media/*
+data/nrv_delta/calibration/*
+!data/nrv_delta/raw/.gitkeep
+!data/nrv_delta/hdf5/.gitkeep
+!data/nrv_delta/media/.gitkeep
+!data/nrv_delta/calibration/.gitkeep
 *.bag
 *.raw
+*.dvs
+*.h5
+*.hdf5
 *.db3
 *.mcap
+
+# Locally supplied NRV Viewer binaries (upstream repository has no clear license)
+third_party/nrv/DVS_Viewer/
 
 # Device-specific camera calibration
 config/camera_info/*.yaml

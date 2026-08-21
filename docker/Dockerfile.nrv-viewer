@@ -1,0 +1,49 @@
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG NRV_VIEWER_COMMIT=460512cec02255a627a3baa2737d9a496345d8fc
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        dbus-x11 \
+        libceres-dev \
+        libgflags-dev \
+        libgl1 \
+        libgoogle-glog-dev \
+        libhdf5-103 \
+        libopencv-dev \
+        libqt6svg6 \
+        libunwind-dev \
+        libusb-1.0-0 \
+        libxcb-cursor0 \
+        libxkbcommon-x11-0 \
+        qt6-base-dev \
+        qt6-wayland \
+        usbutils \
+        xauth \
+        xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY third_party/nrv/DVS_Viewer/Linux/x64/ /opt/nrv/dvs_viewer/
+
+ENV LD_LIBRARY_PATH=/opt/nrv/dvs_viewer
+
+RUN set -eux; \
+    test -f /opt/nrv/dvs_viewer/libDELTA_SDK.so; \
+    test -f /opt/nrv/dvs_viewer/libcyusb.so; \
+    test -f /opt/nrv/dvs_viewer/settings/Delta_10_2000FPS.txt; \
+    test -f /opt/nrv/dvs_viewer/calibration/settings/application/app_defaults.yaml; \
+    chmod +x /opt/nrv/dvs_viewer/DVS_Viewer; \
+    ! ldd /opt/nrv/dvs_viewer/DVS_Viewer | grep -F "not found"; \
+    ! ldd /opt/nrv/dvs_viewer/libDELTA_SDK.so | grep -F "not found"; \
+    printf '%s\n' "${NRV_VIEWER_COMMIT}" > /opt/nrv/dvs_viewer/UPSTREAM_COMMIT
+
+LABEL org.opencontainers.image.title="event-camera-lab NRV DVS Viewer" \
+      org.opencontainers.image.version="1.1.0" \
+      org.opencontainers.image.source="https://github.com/nrvcorp/DVS_Viewer" \
+      org.opencontainers.image.revision="${NRV_VIEWER_COMMIT}"
+
+WORKDIR /opt/nrv/dvs_viewer
+
+CMD ["./DVS_Viewer"]
